@@ -206,8 +206,9 @@ int main(int argc, char **argv)
 				continue;
 
 			action = udev_device_get_action(device);
-			if (strcmp(action, "add") != 0 &&
-			    strcmp(action, "change") != 0) {
+			if (action == NULL ||
+			    (strcmp(action, "add") != 0 &&
+			     strcmp(action, "change") != 0)) {
 			    	udev_device_unref(device);
 				continue;
 			}
