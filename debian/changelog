@@ -7,6 +7,11 @@ fll-live-initscripts (20260528.1) UNRELEASED; urgency=medium
   * fll_blockdev_detect: udev_device_get_action() can return NULL,
     there is no guarantee it is non-NULL even for monitor events.
     Guard against an unexpected NULL monitor event.
+  * fll_blockdev_detect: implement a common udev_monitor_unref()
+    and  cmdline_parser_free() cleanup pathway.
+  * fll_blockdev_detect: filter enumeration path by disk and partition
+    via udev_device_get_devtype() string comparison.
+  * fll_blockdev_detect: drop unneccessary local variable `context'.
 
  -- Kel Modderman <kelvmod@gmail.com>  Thu, 28 May 2026 18:47:30 +1000
 

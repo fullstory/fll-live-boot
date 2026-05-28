@@ -99,7 +99,7 @@ static int process_device(struct udev_device *device)
 int main(int argc, char **argv)
 {
 	struct udev *udev;
-	struct udev_monitor *udev_monitor;
+	struct udev_monitor *udev_monitor = NULL;
 	struct udev_enumerate *u_enum;
 	struct udev_list_entry *u_list_ent;
 	struct udev_list_entry *u_first_list_ent;
@@ -127,21 +127,26 @@ int main(int argc, char **argv)
 	}
 
 	udev_enumerate_add_match_subsystem(u_enum, "block");
-	udev_enumerate_add_match_property(u_enum, "DEVTYPE", "disk");
-	udev_enumerate_add_match_property(u_enum, "DEVTYPE", "partition");
 	udev_enumerate_scan_devices(u_enum);
 
 	u_first_list_ent = udev_enumerate_get_list_entry(u_enum);
 	udev_list_entry_foreach(u_list_ent, u_first_list_ent) {
 		struct udev_device *device;
-		struct udev *context;
+		const char *devtype;
 		const char *name;
 
-		context = udev_enumerate_get_udev(u_enum);
 		name = udev_list_entry_get_name(u_list_ent);
-		device = udev_device_new_from_syspath(context, name);
+		device = udev_device_new_from_syspath(udev, name);
 		if (device == NULL)
 			continue;
+
+		devtype = udev_device_get_devtype(device);
+		if (devtype == NULL ||
+		    (strcmp(devtype, "disk") != 0 &&
+		     strcmp(devtype, "partition") != 0)) {
+			udev_device_unref(device);
+			continue;
+		}
 
 		ret = process_device(device);
 		udev_device_unref(device);
@@ -150,22 +155,18 @@ int main(int argc, char **argv)
 	}
 	udev_enumerate_unref(u_enum);
 
-	if (ret || !opts.monitor_flag) {
-		cmdline_parser_free(&opts);
-		udev_unref(udev);
-		return !ret;
-	}
+	if (ret || !opts.monitor_flag)
+		goto cleanup;
 
-	/* set an alarm to interupt the monitor loop */
+	/* set an alarm to interrupt the monitor loop */
 	setup_timeout_signal(opts.timeout_arg);
 
 	/* monitor add|change of block devices until timeout period expires */
 	udev_monitor = udev_monitor_new_from_netlink(udev, "udev");
 	if (udev_monitor == NULL) {
 		fprintf(stderr, "Error: udev_monitor_new_from_netlink()\n");
-		cmdline_parser_free(&opts);
-		udev_unref(udev);
-		return 1;
+		ret = -1;
+		goto cleanup;
 	}
 	if (udev_monitor_filter_add_match_subsystem_devtype(udev_monitor,
 							    "block",
@@ -174,15 +175,13 @@ int main(int argc, char **argv)
 							    "block",
 							    "partition") < 0) {
 		fprintf(stderr, "Error: udev_monitor_filter_add_match_subsystem_devtype()\n");
-		cmdline_parser_free(&opts);
-		udev_unref(udev);
-		return 1;
+		ret = -1;
+		goto cleanup;
 	}
 	if (udev_monitor_enable_receiving(udev_monitor) < 0) {
 		fprintf(stderr, "Error: udev_monitor_enable_receiving()\n");
-		cmdline_parser_free(&opts);
-		udev_unref(udev);
-		return 1;
+		ret = -1;
+		goto cleanup;
 	}
 
 	fd = udev_monitor_get_fd(udev_monitor);
@@ -209,7 +208,7 @@ int main(int argc, char **argv)
 			if (action == NULL ||
 			    (strcmp(action, "add") != 0 &&
 			     strcmp(action, "change") != 0)) {
-			    	udev_device_unref(device);
+				udev_device_unref(device);
 				continue;
 			}
 
@@ -219,8 +218,10 @@ int main(int argc, char **argv)
 				break;
 		}
 	}
-	udev_monitor_unref(udev_monitor);
 
+cleanup:
+	if (udev_monitor != NULL)
+		udev_monitor_unref(udev_monitor);
 	cmdline_parser_free(&opts);
 	udev_unref(udev);
 
