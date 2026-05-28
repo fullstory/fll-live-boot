@@ -11,7 +11,7 @@ fll-live-initscripts (20260528.1) UNRELEASED; urgency=medium
     and  cmdline_parser_free() cleanup pathway.
   * fll_blockdev_detect: filter enumeration path by disk and partition
     via udev_device_get_devtype() string comparison.
-  * fll_blockdev_detect: drop unneccessary local variable `context'.
+  * fll_blockdev_detect: drop unnecessary local variable `context'.
 
  -- Kel Modderman <kelvmod@gmail.com>  Thu, 28 May 2026 18:47:30 +1000
 
