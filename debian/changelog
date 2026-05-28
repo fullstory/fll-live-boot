@@ -1,9 +1,5 @@
-fll-live-initscripts (20260528.1) UNRELEASED; urgency=medium
+fll-live-initscripts (20260528.1) unstable; urgency=medium
 
-  [ Stefan Lippers-Hollmann ]
-  * NOT RELEASED YET
-
-  [ Kel Modderman ]
   * fll_blockdev_detect: udev_device_get_action() can return NULL,
     there is no guarantee it is non-NULL even for monitor events.
     Guard against an unexpected NULL monitor event.
