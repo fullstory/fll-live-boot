@@ -1,8 +1,22 @@
-fll-live-initscripts (20260528.2) UNRELEASED; urgency=medium
+fll-live-initscripts (20260609.1) UNRELEASED; urgency=medium
 
+  [ Stefan Lippers-Hollmann ]
   * NOT RELEASED YET
 
- -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Thu, 28 May 2026 20:01:41 +0200
+  [ Kel Modderman ]
+  * refactor fll_locales et al:
+    - rename locales.csv to locales.tsv, update header column names, and
+      flip is_default values to conventional boolean (1=primary, 0=variant)
+    - fix zh_* fallback typos
+    - fold locales shell library into fll_locales and remove
+    - replace positional awk column references with named constants
+    - replace awk regex locale match with exact field equality
+    - remove eval from keyboard variable assignment
+    - fix dead for LOCALE in fll_locale_cheats loop (iterated literal string)
+    - replace awk tolower with tr
+    - rename DEMO_CODE to COUNTRY_CODE
+
+ -- Kel Modderman <kelvmod@gmail.com>  Tue, 09 Jun 2026 21:24:30 +1000
 
 fll-live-initscripts (20260528.1) unstable; urgency=medium
 
