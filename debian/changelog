@@ -1,9 +1,5 @@
-fll-live-initscripts (20260609.1) UNRELEASED; urgency=medium
+fll-live-initscripts (20260609.1) unstable; urgency=medium
 
-  [ Stefan Lippers-Hollmann ]
-  * NOT RELEASED YET
-
-  [ Kel Modderman ]
   * refactor fll_locales et al:
     - rename locales.csv to locales.tsv, update header column names, and
       flip is_default values to conventional boolean (1=primary, 0=variant)
