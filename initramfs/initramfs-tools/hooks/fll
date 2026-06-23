@@ -1,0 +1,81 @@
+#!/bin/sh -e
+
+###############################################################################
+# F.U.L.L.S.T.O.R.Y initramfs-tools hook
+#
+# Copyright:	(C) 2007-2024 Kel Modderman <kelvmod@gmail.com>
+#
+# License:	GPLv2
+#
+# F.U.L.L.S.T.O.R.Y Project Homepage:
+# https://github.com/fullstory
+###############################################################################
+
+# initramfs-tools prerequisite handling
+PREREQS="lvm"
+
+prereqs()
+{
+	echo "$PREREQ"
+}
+
+case "$1" in
+	prereqs)
+		prereqs
+		exit 0
+		;;
+esac
+
+. /usr/share/initramfs-tools/hook-functions
+
+[ -s /etc/default/distro ] || exit 0
+
+# distro-defaults
+copy_file "regular file" /etc/default/distro /etc/default/distro
+
+# dm-crypt for encrypted persist partition
+manual_add_modules dm-crypt
+
+# filesystem unioning modules
+manual_add_modules overlay
+
+# erofs, squashfs and loop
+manual_add_modules erofs
+manual_add_modules squashfs
+manual_add_modules loop
+
+# needed for vfat and iso9660
+manual_add_modules nls_cp437
+manual_add_modules nls_utf8
+
+# ntfs3/vfat/exfat (useful for grub2-fll-fromiso)
+manual_add_modules ntfs3
+manual_add_modules vfat
+manual_add_modules exfat
+
+# pmem devices for HTTP boot support
+manual_add_modules of_pmem
+manual_add_modules nd_pmem
+manual_add_modules nfit
+
+# ensure maximum hardware support
+auto_add_modules
+
+# https://systemd.io/INITRD_INTERFACE/
+copy_exec /usr/lib/systemd/systemd-shutdown /shutdown
+mkdir -p "$DESTDIR"/etc
+touch "$DESTDIR"/etc/initrd-release
+mkdir -p "$DESTDIR"/lib/systemd/system-shutdown
+copy_file "regular file" \
+	/usr/share/fll-live-initramfs/fll.shutdown \
+	/usr/lib/systemd/system-shutdown/fll.shutdown
+copy_exec /usr/bin/systemd-detect-virt /usr/bin/systemd-detect-virt
+copy_exec /usr/bin/eject /usr/bin/eject
+
+copy_exec /usr/sbin/cryptsetup /usr/sbin/cryptsetup
+
+# initramfs live media program + script
+copy_exec /usr/bin/fll_blockdev_detect /usr/bin/fll_blockdev_detect
+copy_file "regular file" \
+	/usr/share/fll-live-initramfs/fll.initramfs \
+	/usr/lib/fll/fll.initramfs

@@ -1,0 +1,20 @@
+#!/bin/sh
+
+###
+# F.U.L.L.S.T.O.R.Y systemd-shutdown script
+#
+# Copyright: (C) 2007-2025, Kel Modderman <kelvmod@gmail.com>
+# Copyright: (C) 2008-2024, Stefan Lippers-Hollmann <s.l-h@gmx.de>
+# License:   GPLv2
+#
+# F.U.L.L.S.T.O.R.Y Project Homepage:
+# https://github.com/fullstory
+###
+
+if [ -b /dev/fll-cdrom ]; then
+    eject -m -p /dev/fll-cdrom
+    echo "" > /dev/console
+    echo "Please remove CD, close cdrom drive then press enter." > /dev/console
+    echo "" > /dev/console
+    read x < /dev/console
+fi

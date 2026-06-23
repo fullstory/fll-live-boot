@@ -1,0 +1,87 @@
+#!/bin/sh
+#
+# F.U.L.L.S.T.O.R.Y initramfs live media init functions
+#
+# Copyright:
+#   © 2007-2025 Kel Modderman <kelvmod@gmail.com>
+#   © 2006-2014 Stefan Lippers-Hollmann <s.l-h@gmx.de>
+#   © 2007-2014 Niall Walsh <niallwalsh@celtux.org>
+# License: GPLv2
+#
+# F.U.L.L.S.T.O.R.Y Project Homepage:
+#   https://github.com/fullstory
+#
+# This script:
+#  * listens to udev block device events (via fll_blockdev_detect) and
+#    calls a script which inspects each block device/partition for the UUID
+#    of the carrier filesystem (iso9660) containing the compressed rootfs
+#  * checks the compressed rootfs was detected successfully
+#  * prepares systemd-exitrd for shutdown/reboot in /run/initramfs
+
+init_debug_log()
+{
+    grep -qw -E 'fll[.=]debug' /proc/cmdline || return 0
+    exec 6>&1
+    exec 7>&2
+    exec > debug.log
+    exec 2>&1
+    tail -f debug.log >&7 &
+    echo "${!}" > debug.log.pid
+    set -x
+}
+
+stop_debug_log()
+{
+    [ -f debug.log.pid ] || return 0
+    set +x
+    exec 1>&6 6>&-
+    exec 2>&7 7>&-
+    kill "$(cat debug.log.pid)"
+    if [ -d "${rootmnt}/var/log" ]; then
+        mkdir -p "${rootmnt}/var/log/fll"
+        cp debug.log "${rootmnt}/var/log/fll"
+    fi
+}
+
+mountroot()
+{
+    maybe_break fll-top
+    init_debug_log
+
+    # Run scripts in local-top, like lvm2
+    log_begin_msg "Running /scripts/local-top"
+    run_scripts /scripts/local-top
+    log_end_msg
+
+    maybe_break fll-premount
+
+    fll_blockdev_detect --monitor --execp=/usr/lib/fll/fll.initramfs
+    if [ "$?" -eq 0 ]; then
+        log_success_msg "Mounted live media"
+    else
+        log_failure_msg "Live media not detected or mounted"
+    fi
+
+    maybe_break fll-postmount
+
+    log_begin_msg "Creating exit ramfs"
+    # Save an in-memory copy of the live initial ramdisk for shutdown (exitrd)
+    # https://systemd.io/INITRD_INTERFACE/
+    mkdir /run/initramfs~
+    mount --bind / /run/initramfs~
+    cp -a /run/initramfs~/* /run/initramfs/
+    umount /run/initramfs~
+    rmdir /run/initramfs~
+    # Put exitrd on a diet to save memory
+    rm -rf /run/initramfs/lib/modules /run/initramfs/lib/firmware
+    log_end_msg
+
+    # stop logging
+    stop_debug_log
+    # final debug checkpoint
+    maybe_break fll-bottom
+
+    log_begin_msg "Starting init process"
+    log_end_msg
+}
+

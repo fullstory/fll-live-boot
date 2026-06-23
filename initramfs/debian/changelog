@@ -1,0 +1,2703 @@
+fll-live-initramfs (20260623.1) UNRELEASED; urgency=medium
+
+  [ Stefan Lippers-Hollmann ]
+  * NOT RELEASED YET
+
+  [ Kel Modderman ]
+  * Seed the systemd-homed signing keypair into the state dir before
+    systemd-homed starts, when homectl is used for live user home creation.
+    The keypair persists in the @root COW across reboots of the same rootfs;
+    on a rootfs with no keys yet it is seeded from the copy fll_homectl saves
+    beside the home image on the shared @home, so chroots sharing one @home
+    share the same homed user. This must precede systemd-homed, which loads
+    its keys only once at startup (a seed from fll_homectl, run after
+    systemd-homed.service, is too late and login fails after the first boot).
+  * Keep the systemd journal in RAM for the live session.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Tue, 23 Jun 2026 12:15:09 +1000
+
+fll-live-initramfs (20260617.1) unstable; urgency=medium
+
+  * Support new btrfs persist partition with @root and @home subvolumes,
+    and optional luks encryption.
+  * dracut/modules.d/70fll/module-setup.sh: added cryptsetup to inst_multiple
+    and dm-crypt to installkernel().
+  * initramfs-tools/hooks/fll: added copy_exec /usr/sbin/cryptsetup and
+    manual_add_modules dm-crypt.
+  * Added cryptsetup-bin to Depends so the binary is guaranteed present
+    when the initramfs is generateda.
+  * Feed luks password to cryptsetup more explicitly via plymouth/dev console.
+  * Allow for 3 attempts at unlocking the luks volume.
+  * Remove overlay mount option "optimisations".
+
+ -- Kel Modderman <kelvmod@gmail.com>  Wed, 17 Jun 2026 22:10:24 +1000
+
+fll-live-initramfs (20260612.1) unstable; urgency=medium
+
+  * Do not check for presence of /usr/sbin/update-grub when configuring
+    calameres bootloader.conf; it's pulled in by os-prober/memtest86+.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Fri, 12 Jun 2026 22:01:14 +1000
+
+fll-live-initramfs (20260525.1) unstable; urgency=medium
+
+  * Optimise overlay for performance on tmpfs and simplicity when upper is
+    backed by non-volatile storage.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Mon, 25 May 2026 20:51:59 +1000
+
+fll-live-initramfs (20260524.1) unstable; urgency=medium
+
+  [ Kel Modderman ]
+  * Fix path to /etc/calamares/modules/bootloader.conf.
+  * Configure calamares to prefer grub when present in live chroot.
+  * Brown paper bag: image_name has never been a valid cheatcode,
+    image_file is correctly parse from cmdline now.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Sun, 24 May 2026 23:13:34 +1000
+
+fll-live-initramfs (20260522.1) unstable; urgency=medium
+
+  * Update /etc/calamares/bootloader.conf if refind is detected on
+    chroot
+
+ -- Kel Modderman <kelvmod@gmail.com>  Fri, 22 May 2026 20:29:48 +1000
+
+fll-live-initramfs (20260514.1) unstable; urgency=medium
+
+  * Add procps to depends.
+  * postinst: adjust chrooted() logic to allow installation into
+    systemd container.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Thu, 14 May 2026 20:42:25 +1000
+
+fll-live-initramfs (20260513.1) unstable; urgency=medium
+
+  * Update calamares bootloader.conf for systemd-boot if present.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Wed, 13 May 2026 18:08:07 +1000
+
+fll-live-initramfs (20260305.1) unstable; urgency=medium
+
+  * Use plymouth to display boot message.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Thu, 05 Mar 2026 22:16:15 +1000
+
+fll-live-initramfs (20260126.1) unstable; urgency=medium
+
+  [ Kel Modderman ]
+  * Prepend FLL_ to CUSTOM_HOSTNAME and CUSTOM_TZ variables in
+    fll.initramfs.
+  * Remove the intermediary TZ variable in timzeone logic.
+  * If no timezone has been specified by the owner via grub or
+    cheatcode, fallback to Etc/UTC and configure calamares to select a
+    timezone via geoip. Also disable use of system tz configuration.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Mon, 26 Jan 2026 13:18:21 +0100
+
+fll-live-initramfs (20251224.1) unstable; urgency=medium
+
+  [ Kel Modderman ]
+  * Move initramfs-tools infra into subfolder of same name and adjust
+    debian/rules.
+  * Add the following modules explicitly to dracut initramfs:
+    - overlay (required for live cow overlay)
+    - of_pmem nd_pmem nfit (required for UEFI http boot)
+    - change ntfs to ntfs3
+  * Add utilities to dracut initramfs:
+    - eject (for legacy ejection of physical cd/dvd media)
+    - systemd-detect-virt (to avoid ejection in virt envs)
+  * Add fll.shutdown to exit-initramfs in dracut initramfs.
+  * Adapt initramfs-tools eject logic so it may be shared with dracut
+    initramfs unconditionally.
+  * Simplify noeject logic by making eject on shutdown conditional on
+    /dev/fll-cdrom, and /dev/fll-cdrom conditional on absence of virt or
+    no eject cheatcode.
+  * Add debug logging to dracut fll script.
+  * Simplify log init from initramfs-tools fll script.
+  * Revise utilities required in dracut initramfs and avoid use of touch
+    by using shell redirection.
+  * Accept fll.debug and fll=debug cheatcodes for debugging.
+  * Add some copyright and license headers to the dracut scripts.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Thu, 25 Dec 2025 04:57:30 +0100
+
+fll-live-initramfs (20251221.3) unstable; urgency=medium
+
+  [ Kel Modderman ]
+  * Recommend busybox and eject.
+  * Promote dracut to preferred initramfs dependency.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Tue, 23 Dec 2025 03:30:03 +0100
+
+fll-live-initramfs (20251221.2) unstable; urgency=medium
+
+  [ Kel Modderman ]
+  * Set dracut as default initramfs generator.
+  * Remove awk code in copy_with_perc function and simplify, the output
+    is rarely seen these days and especially so in systemd environment.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Mon, 22 Dec 2025 00:50:32 +0100
+
+fll-live-initramfs (20251221.1) unstable; urgency=medium
+
+  [ Kel Modderman ]
+  * Update calamares by setting readonly fstype and initramfs tool
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Sun, 21 Dec 2025 02:42:48 +0100
+
+fll-live-initramfs (20251216.3) unstable; urgency=medium
+
+  [ Kel Modderman ]
+  * Revert experimental omit_dracutmodule settings.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Tue, 16 Dec 2025 05:07:13 +0100
+
+fll-live-initramfs (20251216.2) unstable; urgency=medium
+
+  [ Kel Modderman ]
+  * Drop kernel_cmdline= from fll dracut module.
+  * Experiment with omit_dracutmodule: systemd systemd-cryptsetup
+    network bluetooth.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Tue, 16 Dec 2025 04:55:34 +0100
+
+fll-live-initramfs (20251216.1) unstable; urgency=medium
+
+  [ Kel Modderman ]
+  * Speculatively set a couple of dracut specific markers for:
+    - declaring root was found
+    - declaring systemd shutdown (exitrd) should be setup
+  * Execute fll scripts during mount phase of dracut init.
+  * Simplify execution of fll hook - do it directly instead of via
+    initqueue.
+  * rd.fll is not present in /proc/cmdline so do not parse.
+  * Migrate from /fll to /run/fll and no longer try to mount -o move the
+    live specific mounts.
+  * Create readonlyfs symlink in /run and not $root/run (which does not
+    yet exist).
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Tue, 16 Dec 2025 04:44:37 +0100
+
+fll-live-initramfs (20251214.1) unstable; urgency=medium
+
+  [ Kel Modderman ]
+  * Switch to date release version numbering.
+  * Add initial, optimistic, speculative, and untested dracut configuration
+    and associate module as a starting point for future migration from
+    initramfs-tools.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Sun, 14 Dec 2025 20:39:27 +0100
+
+fll-live-initramfs (5.0.0) unstable; urgency=medium
+
+  [ Kel Modderman ]
+  * Simplify live media mount logic so that iso9660fs or iso file logic
+    is used when fromiso cheatcode is given, or persist_uuid cheatcode is
+    not given.
+  * Remove live hashsum logic - one is calculated for the iso media and
+    that is enough.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Thu, 27 Nov 2025 02:27:52 +0100
+
+fll-live-initramfs (4.0.24) unstable; urgency=medium
+
+  [ Kel Modderman ]
+  * If fromhd= boot parameter is used, do not attempt to boot directly from
+    partition by uuid to preserve fromiso functionality.
+  * Don't attempt to mount by partition by uuid when iso uuid matches.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Wed, 22 Oct 2025 21:33:55 +0200
+
+fll-live-initramfs (4.0.23) unstable; urgency=medium
+
+  [ Kel Modderman ]
+  * Tweak logic around handling of boot process when rootfs_uuid is given
+    as a boot parameter to reject all block devices without a matching
+    ID_FS_UUID.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Fri, 10 Oct 2025 18:28:35 +0200
+
+fll-live-initramfs (4.0.22) unstable; urgency=medium
+
+  [ Kel Modderman ]
+  * Remove uuid= cheatcode handling, I had put it in the incorrect spot
+    anyhow.
+  * Remove squashfs from filesystem whitelist for device/partition
+    matching.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Wed, 08 Oct 2025 00:52:14 +0200
+
+fll-live-initramfs (4.0.21) unstable; urgency=medium
+
+  [ Kel Modderman ]
+  * Make persistent COW rootfs UUID specific.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Tue, 07 Oct 2025 23:32:25 +0200
+
+fll-live-initramfs (4.0.20) unstable; urgency=medium
+
+  [ Kel Modderman ]
+  * Add experimental persist_uuid cheatcode.
+  * Provide logic for accessing GPT partition directly rather than via
+    iso9660 file.
+  * Rename uuid cheatcode to iso_uuid.
+  * Add rootfs_uuid cheatcode.
+  * Only accept partitions when rootfs_uuid is given.
+  * Whitelist erofs and squashfs filesystems.
+  * Get fstype of persist_uuid before attempting mount.
+  * Mount persist volume with noatime option.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Sat, 04 Oct 2025 19:06:46 +0200
+
+fll-live-initramfs (4.0.19) unstable; urgency=medium
+
+  [ Kel Modderman ]
+  * Do whole word matching when grepping /proc/mounts.
+  * Add jfs|f2fs|exfat|udf to the filesystem whitelist.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Wed, 20 Aug 2025 21:32:14 +0200
+
+fll-live-initramfs (4.0.18) unstable; urgency=medium
+
+  [ Kel Modderman ]
+  * Start debug trace early as possible if fll=debug is given on cmdline.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Mon, 18 Aug 2025 21:41:08 +0200
+
+fll-live-initramfs (4.0.17) unstable; urgency=medium
+
+  [ Kel Modderman ]
+  * Canonicalize device node before comparison with $DEVNAME.
+  * Dump environment variables when debugging.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Mon, 18 Aug 2025 19:00:40 +0200
+
+fll-live-initramfs (4.0.16) unstable; urgency=medium
+
+  [ Kel Modderman ]
+  * Support fromhd=/dev/disk/by-uuid/ as well as fromhd=UUID=, which is
+    a boot parameter passed on by grub2-fll-fromiso.
+  * If fromhd=/dev/* is provided as a boot parameter, and it is not
+    fromhd=/dev/disk/by-uuid/, then only probe the block device node if
+    it is a name match.
+  * Remove a couple of unnecessary variables from scripts/fll.
+  * Remove no_static_dev variable and unnecessary check for quiet variable
+    when logging messages.
+  * Add debug logging.
+  * Do not echo while setting up timezone.
+  * Avoid attempting to move mount the same mount more than once.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Mon, 18 Aug 2025 15:48:52 +0200
+
+fll-live-initramfs (4.0.15) unstable; urgency=medium
+
+  * add ntfs/ vfat to whitelisted filesystems, thanks to Kel.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Mon, 18 Aug 2025 01:20:18 +0200
+
+fll-live-initramfs (4.0.14) unstable; urgency=medium
+
+  [ Kel Modderman ]
+  * Check /proc/mounts before calling umount of iso and block device media
+    during toram routine.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Thu, 31 Jul 2025 13:26:32 +0200
+
+fll-live-initramfs (4.0.13) unstable; urgency=medium
+
+  [ Kel Modderman ]
+  * Lazy umount original iso and block device mountpoints after toram
+    operation completes.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Mon, 28 Jul 2025 02:35:14 +0200
+
+fll-live-initramfs (4.0.12) unstable; urgency=medium
+
+  [ Kel Modderman ]
+  * Add of_pmem module to initramfs for UEFI http boot support on device
+    tree architectures.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Sat, 26 Jul 2025 04:06:30 +0200
+
+fll-live-initramfs (4.0.11) unstable; urgency=medium
+
+  [ Kel Modderman ]
+  * Add pmem modules for amd64 (nd_pmem, nfit) for UEFI HTTP boot support.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Tue, 22 Jul 2025 05:19:24 +0200
+
+fll-live-initramfs (4.0.10) unstable; urgency=medium
+
+  [ Kel Modderman ]
+  * toram: print input and output files.
+  * shutdown: remove debug code no longer neccessary.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Fri, 18 Jul 2025 06:45:47 +0200
+
+fll-live-initramfs (4.0.9) unstable; urgency=medium
+
+  [ Kel Modderman ]
+  * Reimplement toram bot cheatcode.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Sat, 12 Jul 2025 05:17:10 +0200
+
+fll-live-initramfs (4.0.8) unstable; urgency=medium
+
+  [ Kel Modderman ]
+  * Update both calamares unpackfs(c).conf with readonly fstype
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Wed, 09 Jul 2025 19:02:11 +0200
+
+fll-live-initramfs (4.0.7) unstable; urgency=medium
+
+  [ Kel Modderman ]
+  * No longer remount /run with exec - this should be managed by shell
+    script fragment installed by fll-live-initscripts.
+  * Check sha256 checksum instead of md5.
+  * Add support for erofs.
+  * Remove hardcoded squashfs check.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Tue, 08 Jul 2025 06:48:45 +0200
+
+fll-live-initramfs (4.0.6) unstable; urgency=medium
+
+  [ Kel Modderman ]
+  * Tweak error condition when blockdev has been probed before.
+  * No longer touch $rootmnt/fastboot, systemd prefers fsck.mode=skip to be
+    set on cmdline instead.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Sun, 22 Jun 2025 07:14:38 +0200
+
+fll-live-initramfs (4.0.5) unstable; urgency=medium
+
+  [ Kel Modderman ]
+  * Update comments in scripts/fll and fll.initramfs.
+  * Merge more functionality from scripts/fll to fll.initramfs to keep rootfs
+    related code together.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Wed, 18 Jun 2025 07:07:59 +0200
+
+fll-live-initramfs (4.0.4) unstable; urgency=medium
+
+  [ Kel Modderman ]
+  * Remove blacklist boot cheatcode it is not executed early enough in
+    boot that this position.
+  * Remove image_dir and image_file cheatcodes.
+  * Move /root dotfile setup to fll-home.service.
+  * Reorder fll initramfs scripts a little more logically so that similar
+    elements are grouped together and fold some long lines.
+  * Remove desktop cheatcode handling from initramfs.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Sat, 14 Jun 2025 02:04:59 +0200
+
+fll-live-initramfs (4.0.3) unstable; urgency=medium
+
+  * Add support for grub2-fll-fromiso: if fromhd=UUID= is provided then
+    only accept block devices with matching ID_FS_UUID.
+  * Panic on failure of fll_blockdev_detect to detect live media.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Mon, 09 Jun 2025 20:53:20 +1000
+
+fll-live-initramfs (4.0.2) unstable; urgency=medium
+
+  [ Kel Modderman ]
+  * Implement md5sum checking.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Mon, 09 Jun 2025 13:47:23 +1000
+
+fll-live-initramfs (4.0.1) unstable; urgency=medium
+
+  * drop support for reiserfs (removed with kernel v6.13).
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Mon, 09 Jun 2025 02:12:17 +0200
+
+fll-live-initramfs (4.0.0) unstable; urgency=medium
+
+  [ Kel Modderman ]
+  * Introduce fll_blockdev_detect and strip boot time features back to
+    bare minimum required to boot from iso9660 fs for iso media on a linux
+    filesystem.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Sun, 08 Jun 2025 21:38:15 +1000
+
+fll-live-initramfs (3.0.27) unstable; urgency=medium
+
+  [ Kel Modderman ]
+  * lxqt: default to wayland session.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Thu, 01 May 2025 04:08:50 +0200
+
+fll-live-initramfs (3.0.26) unstable; urgency=medium
+
+  * Add support for wayland-sessions/sway.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Thu, 02 Jan 2025 18:08:27 +1000
+
+fll-live-initramfs (3.0.25) unstable; urgency=medium
+
+  * Fix lxqt-kwin cheatcode typo.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Wed, 01 Jan 2025 22:20:01 +1000
+
+fll-live-initramfs (3.0.24) unstable; urgency=medium
+
+  * Bugfix: properly save the DESKTOP variable as FLL_XDESKTOP.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Wed, 01 Jan 2025 21:37:11 +1000
+
+fll-live-initramfs (3.0.23) unstable; urgency=medium
+
+  * Support cheatcodes for lxqt: lxqt-wayland|lxqt-labwc|labwc-
+    kwin|lxqt-hyprland|lxqt-sway|lxqt-wayfire.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Wed, 01 Jan 2025 20:50:08 +1000
+
+fll-live-initramfs (3.0.22) unstable; urgency=medium
+
+  * Add support for desktop variants (e.g. different compositors for a
+    given wayland session) by catching and storing FLL_XDESKTOP in
+    /etc/default/distro for use by fll-home.service during boot.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Wed, 01 Jan 2025 20:14:21 +1000
+
+fll-live-initramfs (3.0.21) unstable; urgency=medium
+
+  [ Kel Modderman ]
+  * Add support for hyprland wayland-session.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Wed, 01 Jan 2025 01:20:25 +0100
+
+fll-live-initramfs (3.0.20) unstable; urgency=medium
+
+  * Fix path to labwc.desktop - s/xsessions/wayland-session/ doh.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Sat, 28 Dec 2024 23:37:43 +1000
+
+fll-live-initramfs (3.0.19) unstable; urgency=medium
+
+  * Add support for a labwc wayland session.
+  * Add plasma and plasmax11 desktop cheatcodes, preserve kde-*.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Sat, 28 Dec 2024 23:37:17 +1000
+
+fll-live-initramfs (3.0.18) unstable; urgency=medium
+
+  [ Kel Modderman ]
+  * Add support for MATE xsession.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Fri, 27 Dec 2024 06:46:05 +0100
+
+fll-live-initramfs (3.0.17) unstable; urgency=medium
+
+  * Add support for xfce-wayland.
+  * Add support for lxqt-wayland.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Sat, 21 Dec 2024 08:02:15 +1000
+
+fll-live-initramfs (3.0.16) unstable; urgency=medium
+
+  [ Kel Modderman ]
+  * Detect budgie-desktop xsession.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Sat, 07 Dec 2024 13:07:09 +0100
+
+fll-live-initramfs (3.0.15) unstable; urgency=medium
+
+  * Create fstype symlink _after_ mounting a tmpfs on ${rootmnt}.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Tue, 03 Dec 2024 23:12:35 +1000
+
+fll-live-initramfs (3.0.14) unstable; urgency=medium
+
+  * Make sure ${rootmnt}/fll exists before attempting to create fstype
+    symlink.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Tue, 03 Dec 2024 22:43:45 +1000
+
+fll-live-initramfs (3.0.13) unstable; urgency=medium
+
+  * Create convenience symlink to compressed fs at /fll/${FSTYPE} for
+    calamares to unpack.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Tue, 03 Dec 2024 21:55:23 +1000
+
+fll-live-initramfs (3.0.12) unstable; urgency=medium
+
+  * Setup getty for live login in initramfs - moved from build chroot.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Sat, 30 Nov 2024 18:14:57 +1000
+
+fll-live-initramfs (3.0.11) unstable; urgency=medium
+
+  * fll_copy_with_perc:
+    - use dd and track write progress via fdinfo
+    - obtain size of block devices with blockdev --getsize64
+    - second argument is output filename
+    - remove tests for existence of variable at top of function
+  * Add extra sanity check when performing bulk mount -o move.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Sat, 30 Nov 2024 16:35:20 +1000
+
+fll-live-initramfs (3.0.10) unstable; urgency=medium
+
+  * Xsession management: plasma for wayland, and plasmax11 for x11.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Wed, 27 Nov 2024 17:24:47 +1000
+
+fll-live-initramfs (3.0.9) unstable; urgency=medium
+
+  * Retire noprompt|doprompt cheatcodes and fix toram.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Thu, 21 Nov 2024 18:04:25 +1000
+
+fll-live-initramfs (3.0.8) unstable; urgency=medium
+
+  * Flag NO_EJECT when booting with fromhd or fromiso cheatcodes.
+  * Set fll.debug flag in /run/initramfs from fll=debug cheatcode is used.
+  * Move sudoers config and display manager autologin setup to
+    fll-live-initscripts/fll_adduser.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Wed, 20 Nov 2024 20:17:06 +1000
+
+fll-live-initramfs (3.0.7) unstable; urgency=medium
+
+  [ Kel Modderman ]
+  * fll.shutdown: put fll.debug in a variable like the others.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Tue, 19 Nov 2024 23:48:10 +0100
+
+fll-live-initramfs (3.0.6) unstable; urgency=medium
+
+  [ Kel Modderman ]
+  * Shorten exitrd debug file to fll.debug and update code comments.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Tue, 19 Nov 2024 01:54:54 +0100
+
+fll-live-initramfs (3.0.5) unstable; urgency=medium
+
+  * Remove unrequired live mount point dismantle code from fll.shutdown,
+    systemd-shutdown takes care of it already.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Tue, 19 Nov 2024 10:20:03 +1000
+
+fll-live-initramfs (3.0.4) unstable; urgency=medium
+
+  * Call mount when pausing to debug fll.shutdown.
+  * Reduce ram usage by pruning linux modules and firmware from
+    shutdown initrd.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Mon, 18 Nov 2024 23:56:36 +1000
+
+fll-live-initramfs (3.0.3) unstable; urgency=medium
+
+  * Use systemd-detect-virt to detect virtual environments.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Mon, 18 Nov 2024 23:39:39 +1000
+
+fll-live-initramfs (3.0.2) unstable; urgency=medium
+
+  * Move prompt and eject cheatcode handling into early boot and base
+    shutdown behaviour on existence of files in /run/initramfs.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Mon, 18 Nov 2024 23:16:05 +1000
+
+fll-live-initramfs (3.0.1) unstable; urgency=medium
+
+  * Add pre-shutdown script to tear down live mount points and eject.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Mon, 18 Nov 2024 22:41:01 +1000
+
+fll-live-initramfs (3.0.0) unstable; urgency=medium
+
+  * Use systemd-shutdown to establish a shutdown initrd environment.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Mon, 18 Nov 2024 17:24:32 +1000
+
+fll-live-initramfs (2.9.38) unstable; urgency=medium
+
+  * No longer mount second squashfs.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Thu, 14 Nov 2024 19:43:58 +1000
+
+fll-live-initramfs (2.9.37) unstable; urgency=medium
+
+  * Allow cinnamon to default to x11 xsession for now.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Mon, 11 Nov 2024 21:26:13 +1000
+
+fll-live-initramfs (2.9.36) unstable; urgency=medium
+
+  * Fix gnome xsession type detection and cinnamon wayland session
+    name.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Mon, 11 Nov 2024 21:19:00 +1000
+
+fll-live-initramfs (2.9.35) unstable; urgency=medium
+
+  * Add xsession functionality to lightdm setup.
+  * Add support for gnome-x11 session.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Mon, 11 Nov 2024 21:18:15 +1000
+
+fll-live-initramfs (2.9.34) unstable; urgency=medium
+
+  * Fix detection of desktop xsession files.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Mon, 11 Nov 2024 20:27:42 +1000
+
+fll-live-initramfs (2.9.33) unstable; urgency=medium
+
+  * Overhaul xsession detection to use desktop file presence as markers.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Mon, 11 Nov 2024 20:23:37 +1000
+
+fll-live-initramfs (2.9.32) unstable; urgency=medium
+
+  * Import timezone management code from fll-live-initscripts.
+  * Default to a wayland xesssion for gnome. Add desktop=gnome-x11
+    cheatcode.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Mon, 11 Nov 2024 17:24:48 +1000
+
+fll-live-initramfs (2.9.31) unstable; urgency=medium
+
+  * Set Relogin=true in sddm config.
+  * Do not execute fll_fstab_generator in chroot.
+  * Create passwordless sudoers config only for the non systemd-homd
+    live user.
+  * No longer run adduser in chroot, return that functionality to fll-
+    live-initscripts.
+  * Relocate blacklist= cheatcode handling to close proximity with other
+    kernel/udev related functions.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Mon, 11 Nov 2024 17:24:09 +1000
+
+fll-live-initramfs (2.9.30) unstable; urgency=medium
+
+  * Fix paths to gdm3, slim and lxdm.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Sun, 10 Nov 2024 11:44:26 +1000
+
+fll-live-initramfs (2.9.29) unstable; urgency=medium
+
+  * Remove resirection to null when adding live user.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Sun, 10 Nov 2024 11:22:45 +1000
+
+fll-live-initramfs (2.9.28) unstable; urgency=medium
+
+  * Disable setup to the x-display-manager when systemd-homed ise
+    present.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Sun, 10 Nov 2024 11:04:56 +1000
+
+fll-live-initramfs (2.9.27) unstable; urgency=medium
+
+  * Bugfix xdm setup and execute regardless of adduser vs sydetmd-homed.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Sun, 10 Nov 2024 09:41:40 +1000
+
+fll-live-initramfs (2.9.26) unstable; urgency=medium
+
+  * Setup the x-display-managers in initramfs if systemd-homed is not
+    installed in live chroot.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Sun, 10 Nov 2024 09:10:07 +1000
+
+fll-live-initramfs (2.9.25) unstable; urgency=medium
+
+  * Retain support for adduser.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Sat, 09 Nov 2024 23:17:40 +1000
+
+fll-live-initramfs (2.9.24) unstable; urgency=medium
+
+  * Handle the no desktop case better.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Sat, 09 Nov 2024 22:48:32 +1000
+
+fll-live-initramfs (2.9.23) unstable; urgency=medium
+
+  * Purge the attempt at systemd-homed-firstboot.service override.
+  * Write FLL_XTYPE and FLL_XSESSION to /etc/default/distro for use by
+    fll_homed.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Sat, 09 Nov 2024 22:30:21 +1000
+
+fll-live-initramfs (2.9.22) unstable; urgency=medium
+
+  * Create override directory before attempting to write conffile.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Sat, 09 Nov 2024 21:21:15 +1000
+
+fll-live-initramfs (2.9.21) unstable; urgency=medium
+
+  * Provide a systemd-homed-firstboot.service.d override configuration.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Sat, 09 Nov 2024 21:12:16 +1000
+
+fll-live-initramfs (2.9.20) unstable; urgency=medium
+
+  * Switch to homectl for user creation.
+  * Incorporate fll_xdm initscript/service.
+  * Drop hack of /etc/pam.d/login.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Sat, 09 Nov 2024 20:02:17 +1000
+
+fll-live-initramfs (2.9.19) unstable; urgency=medium
+
+  * Fix username= cmdline parsing and adjust sed expression which
+    patches /etc/default/distro with update variables.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Sat, 09 Nov 2024 18:16:07 +1000
+
+fll-live-initramfs (2.9.18) unstable; urgency=medium
+
+  * Fix obvious shell syntax errors.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Sat, 09 Nov 2024 17:56:38 +1000
+
+fll-live-initramfs (2.9.17) unstable; urgency=medium
+
+  [ Kel Modderman ]
+  * Remove fll-bindmount breakpoint - no bind mounting exists anymore.
+  * Remove fll-bottom break point to the ... bottom.
+  * Update email address in various copyright texts.
+  * Remove hacking of no longer used /etc/inittab.
+  * Incoporate functionality that used to exist in fll-live-initscripts
+    that is more suitable to execute before the chroot boot system takes
+    over: setting up /etc/fstab, creating the live user, and parsing the
+    boot cmdline.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Sat, 09 Nov 2024 17:34:11 +1000
+
+fll-live-initramfs (2.9.16) unstable; urgency=medium
+
+  * override dh_installinitramfs to use --no-scripts, so it won't trigger on
+    purge (interfering with pyfll, due to update-initramfs being undiverted at
+    that point).
+  * drop custom postinst.
+  * bump compat level to 13 again.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Mon, 04 Nov 2024 04:24:37 +0100
+
+fll-live-initramfs (2.9.15) unstable; urgency=medium
+
+  * revert to compat level 11 for now, to paper over the change of
+    update-initramfs trigger handling.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Mon, 04 Nov 2024 02:15:20 +0100
+
+fll-live-initramfs (2.9.14) unstable; urgency=medium
+
+  + switch to compat level 13.
+  * bump standards version to 4.7.0, no changes necessary.
+  * make lintian a little happier:
+    - source: vcs-field-uses-insecure-uri Git
+    - source: insecure-copyright-format-uri
+    - source: silent-on-rules-requiring-root
+    - source: trailing-whitespace [debian/changelog:290]
+    - priority-extra-is-replaced-by-priority-optional
+    - source: obsolete-url-in-packaging ftp://ftp.debian.org [debian/copyright]
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Mon, 04 Nov 2024 00:17:43 +0100
+
+fll-live-initramfs (2.9.13) unstable; urgency=medium
+
+  * fix lintian warning:
+    command-with-path-in-maintainer-script postinst: /usr/sbin/update-initramfs
+    rely on $(which update-initramfs) instead.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Sat, 12 Mar 2016 02:46:10 +0100
+
+fll-live-initramfs (2.9.12) unstable; urgency=medium
+
+  * fix F.U.L.L.S.T.O.R.Y. homepage URL.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Sat, 12 Mar 2016 02:43:23 +0100
+
+fll-live-initramfs (2.9.11) unstable; urgency=medium
+
+  * remove the udevadm trigger+settle dance again for testing, this should be
+    fixed in udev 221.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Sat, 04 Jul 2015 23:15:40 +0200
+
+fll-live-initramfs (2.9.10) unstable; urgency=medium
+
+  * for now run udevadm trigger+settle in scripts/fll (for single-core
+    systems).
+
+ -- Niall Walsh <niallwalsh@celtux.org>  Fri, 19 Jun 2015 04:54:59 +0100
+
+fll-live-initramfs (2.9.9) unstable; urgency=medium
+
+  * revert running scripts/init-top/udev for testing, udev seems to be fixed.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Fri, 19 Jun 2015 00:34:12 +0200
+
+fll-live-initramfs (2.9.8) unstable; urgency=medium
+
+  * run scripts/init-top/udev (again) from scripts/fll as it appears to
+    be running too early.
+
+ -- Niall Walsh <niallwalsh@celtux.org>  Tue, 09 Jun 2015 20:19:10 +0100
+
+fll-live-initramfs (2.9.7) unstable; urgency=medium
+
+  * drop versioned dependency on initramfs-tools, it's provided by all
+    relevant Debian releases.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Sun, 04 Jan 2015 01:34:26 +0100
+
+fll-live-initramfs (2.9.6) unstable; urgency=medium
+
+  * bump standards version to 3.9.6, no changes necessary.
+  * convert to machine readable copyright.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Sat, 03 Jan 2015 19:56:56 +0100
+
+fll-live-initramfs (2.9.5) unstable; urgency=medium
+
+  * get rid of the extraneous -v for awk left behind in the last change.
+
+ -- Niall Walsh <niallwalsh@celtux.org>  Sun, 21 Dec 2014 23:43:19 +0000
+
+fll-live-initramfs (2.9.4) unstable; urgency=medium
+
+  * fix toram typo and tweak figures to be more caustiously realistic.
+
+ -- Niall Walsh <niallwalsh@celtux.org>  Sun, 21 Dec 2014 22:49:40 +0000
+
+fll-live-initramfs (2.9.3) unstable; urgency=medium
+
+  * fix broken awk in detection of toram size and count both squashfs sizes.
+
+ -- Niall Walsh <niallwalsh@celtux.org>  Sun, 21 Dec 2014 14:34:34 +0000
+
+fll-live-initramfs (2.9.2) unstable; urgency=medium
+
+  * fixup md5sum for fromhd squashfs partition case.
+
+ -- Niall Walsh <niallwalsh@celtux.org>  Mon, 08 Dec 2014 19:49:01 +0000
+
+fll-live-initramfs (2.9.1) unstable; urgency=medium
+
+  * mount up secondary squashfs and fixup toram.
+
+ -- Niall Walsh <niallwalsh@celtux.org>  Mon, 08 Dec 2014 02:05:44 +0000
+
+fll-live-initramfs (2.9.0) unstable; urgency=medium
+
+  * s/overlayfs/overlay/.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Sat, 22 Nov 2014 18:32:03 +0100
+
+fll-live-initramfs (2.8.3) unstable; urgency=medium
+
+  * fix fix logic error when detecting the unioning method once more.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Tue, 28 Oct 2014 13:29:25 +0100
+
+fll-live-initramfs (2.8.2) unstable; urgency=medium
+
+  * fix logic error when detecting the unioning method.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Tue, 28 Oct 2014 13:10:58 +0100
+
+fll-live-initramfs (2.8.1) unstable; urgency=medium
+
+  * detect the available FLL_UNION_MODULE automatically.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Tue, 28 Oct 2014 06:10:30 +0100
+
+fll-live-initramfs (2.8.0) unstable; urgency=medium
+
+  * (re-)indent code and add overlayfs cheatcode.
+  * drop dmsetup code.
+  * drop unionfs code.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Tue, 28 Oct 2014 02:49:26 +0100
+
+fll-live-initramfs (2.7.19) unstable; urgency=medium
+
+  * fixup toram fssize and handling of mount juggling.
+
+ -- Niall Walsh <niallwalsh@celtux.org>  Mon, 27 Oct 2014 22:58:07 +0000
+
+fll-live-initramfs (2.7.18) unstable; urgency=medium
+
+  * add overlayfs support.
+
+ -- Niall Walsh <niallwalsh@celtux.org>  Sun, 26 Oct 2014 23:05:17 +0000
+
+fll-live-initramfs (2.7.17) unstable; urgency=medium
+
+  * allow squashfs under gpt partlabel matching uuid as discovered device.
+
+ -- Niall Walsh <niallwalsh@celtux.org>  Wed, 22 Oct 2014 14:19:42 +0100
+
+fll-live-initramfs (2.7.16) unstable; urgency=medium
+
+  * drop support for classic persistence.
+  * add udev override handling and setting the hostname into the initramfs
+    hook.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Sat, 30 Aug 2014 23:04:26 +0200
+
+fll-live-initramfs (2.7.15) unstable; urgency=medium
+
+  * drop special handling for /etc/machine-id, it's now handled via pyfll
+    itself.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Sun, 22 Jun 2014 23:08:49 +0200
+
+fll-live-initramfs (2.7.14) unstable; urgency=medium
+
+  * debian/control: switch Vcs tags to github.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Sun, 13 Apr 2014 22:18:59 +0200
+
+fll-live-initramfs (2.7.13) unstable; urgency=low
+
+  * generate a unique machine id for systemd.
+  * bump standards version to 3.9.5, no changes necessary.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Sun, 02 Mar 2014 18:00:10 +0100
+
+fll-live-initramfs (2.7.12) unstable; urgency=low
+
+  * selinuxfs is now mounted at /sys/fs/selinux/, don't create /selinux/
+    anymore.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Tue, 07 May 2013 18:26:53 +0200
+
+fll-live-initramfs (2.7.11) unstable; urgency=low
+
+  * update FSF postal address to be URLs.
+  * bump standards version to 3.9.4, no changes necessary.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Sat, 12 Jan 2013 02:34:06 +0100
+
+fll-live-initramfs (2.7.10) unstable; urgency=low
+
+  * drop versioned dependency on busybox.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Mon, 06 Aug 2012 00:25:46 +0200
+
+fll-live-initramfs (2.7.9) unstable; urgency=low
+
+  * busybox 1:1.20.0-5 fixes the previous problems (#679377) with awk and PATH
+    unset, bump dependency accordingly and revert the no longer required
+    workaround.
+  * don't complain if /tmp/ already exists.
+  * rework coding style (whitespace/ comment cleanup).
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Sun, 08 Jul 2012 16:25:45 +0200
+
+fll-live-initramfs (2.7.8) unstable; urgency=low
+
+  * work around #679377 by prepending busybox to all awk instances, thanks to
+    Michael Tokarev <mjt@tls.msk.ru>.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Fri, 06 Jul 2012 04:02:44 +0200
+
+fll-live-initramfs (2.7.7) unstable; urgency=low
+
+  * move --noclear hacking into the builder.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Fri, 15 Jun 2012 00:31:28 +0200
+
+fll-live-initramfs (2.7.6) unstable; urgency=low
+
+  * default to --no-clear for the live-system, this is reverted for the
+    installed system by fll-installer.
+  * avoid multiple --no-clear lines on persistent live systems.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Tue, 05 Jun 2012 23:20:41 +0200
+
+fll-live-initramfs (2.7.5) unstable; urgency=low
+
+  * Clear FLL_PERSIST_BLOCKMNT when persisting to a file (i.e. on fat)
+  * FLL_COWDIR is /fll/persist when persisting to a file
+  * Change test for persist to just use FLL_PERSIST (now _BLOCKMNT is cleared)
+
+ -- Niall Walsh <niallwalsh@users.berlios.de>  Mon, 26 Mar 2012 15:57:48 +0100
+
+fll-live-initramfs (2.7.4) unstable; urgency=low
+
+  [ Niall Walsh ]
+  * make serial work on runlevels 4,5 so you can "debug" X a bit
+  * use FLL_PERSIST_BLOCKMNT in aufs/unionfs setup
+
+  [ Stefan Lippers-Hollmann ]
+  * use safer variable checking.
+  * add live-only option to not clear ttys (cheatcode "getty=noclear").
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Sun, 25 Mar 2012 22:20:45 +0200
+
+fll-live-initramfs (2.7.3) unstable; urgency=low
+
+  * Add console=ttyS (serial) support
+
+ -- Niall Walsh <niallwalsh@users.berlios.de>  Sun, 25 Mar 2012 17:55:28 +0100
+
+fll-live-initramfs (2.7.2) unstable; urgency=low
+
+  * Mount union on / instead of FLL_BLOCKMNT
+
+ -- Niall Walsh <niallwalsh@users.berlios.de>  Sun, 25 Mar 2012 17:26:02 +0100
+
+fll-live-initramfs (2.7.1) unstable; urgency=low
+
+  * bump standards version to 3.9.3, no changes necessary.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Thu, 23 Feb 2012 16:19:22 +0100
+
+fll-live-initramfs (2.7.0) unstable; urgency=low
+
+  * switch from vol_id/ udev compatibility mode to native blkid invocations,
+    as these are deprecated in util-linux >= 2.21.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Thu, 19 Jan 2012 14:11:24 +0100
+
+fll-live-initramfs (2.6.3) unstable; urgency=low
+
+  * switch to compat level 9.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Mon, 16 Jan 2012 01:11:19 +0100
+
+fll-live-initramfs (2.6.2) unstable; urgency=low
+
+  * simplify md5 check to work without awk and reduce vertical footprint.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Wed, 17 Aug 2011 22:11:01 +0200
+
+fll-live-initramfs (2.6.1) unstable; urgency=low
+
+  * switch to simplified dh7, --before --after --until and --remaining options
+    are deprecated since debhelper 8.9.4.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Sun, 07 Aug 2011 03:12:30 +0200
+
+fll-live-initramfs (2.6.0) unstable; urgency=low
+
+  * avoid depending on /bin/busybox for initramfs scripts, /bin/busybox is no
+    longer present in initramfs images created with initramfs-tools >>0.98.8.
+  * don't mount aufs over /run/.
+  * only recommend busybox, it's technically no longer required, but very
+    convenient for debugging.
+  * bump standards version to 3.9.2, no changes necessary.
+  * hide eventual modprobe failures for loop.ko, it might be complied in
+    statically and we already bail out if no loop devices exist.
+  * also allow udf as filesystem on optical media.
+  * update copyrights.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Thu, 28 Apr 2011 16:38:13 +0200
+
+fll-live-initramfs (2.5.2) unstable; urgency=low
+
+  * Mount persist in a file for aufs with right fstype (I broke it, sorry)
+
+ -- Niall Walsh <niallwalsh@users.berlios.de>  Sun, 23 Jan 2011 23:40:45 +0000
+
+fll-live-initramfs (2.5.1) unstable; urgency=low
+
+  * indent-only as separate commit.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Fri, 15 Oct 2010 03:54:21 +0200
+
+fll-live-initramfs (2.5.0) unstable; urgency=low
+
+  * add devmapper based unioning method, thanks to bfree:
+    - fix ${FLL_MOUNTPOINT}.mnt creation
+    - hide dd invocation.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Fri, 15 Oct 2010 03:38:44 +0200
+
+fll-live-initramfs (2.4.6) unstable; urgency=low
+
+  * drop no longer required nbd overrides.
+
+ -- Niall Walsh <niallwalsh@users.berlios.de>  Sun, 14 Aug 2010 17:19:17 +0100
+
+fll-live-initramfs (2.4.5) unstable; urgency=low
+
+  * switch to compat level 8.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Sun, 08 Aug 2010 03:57:15 +0200
+
+fll-live-initramfs (2.4.4) unstable; urgency=low
+
+  * bump standards version to 3.9.1, no changes necessary.
+  * elaborate long description a bit further, to make lintian happy.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Tue, 03 Aug 2010 18:25:04 +0200
+
+fll-live-initramfs (2.4.3) unstable; urgency=low
+
+  * initramfs-tools updated, revert some nbd hackery
+    - BOOTIF now fixed
+    - DEVICE no longer hardcoded
+    - no DEVICE works
+
+ -- Niall Walsh <niallwalsh@users.berlios.de>  Fri, 04 Jun 2010 12:37:15 +0100
+
+fll-live-initramfs (2.4.2) unstable; urgency=low
+
+  * Revert errant removal of fll_meminfo function.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Fri, 28 May 2010 18:54:58 +1000
+
+fll-live-initramfs (2.4.1) unstable; urgency=low
+
+  * nbdroot enables fromhd.
+  * Use nbd-client -c instead of udev to check nbd devices.
+  * Probe ${disk}p[1-9]* to allow probe of nbd partitions.
+  * Export (fixed, reversed) BOOTIF if it's not set.
+  * Bring up networking for nbdroot, export DEVICE.
+  * When FLL_FROMHD_DEV is nbd, check nbd-client running or rerun.
+
+ -- Niall Walsh <niallwalsh@users.berlios.de>  Mon, 26 Apr 2010 20:40:02 +0100
+
+fll-live-initramfs (2.4.0) unstable; urgency=low
+
+  * Remove all traces of colour and fancy output.
+  * Remove kernel version check, it was weak.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Mon, 26 Apr 2010 00:46:49 +1000
+
+fll-live-initramfs (2.3.0) unstable; urgency=low
+
+  * nuke manual deletions from /etc/rc?.d/, it breaks with insserv.
+  * switch to dpkg-source 3.0 (native) format.
+  * bump standards version to 3.8.4, no changes necessary.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Wed, 14 Apr 2010 14:01:49 +0200
+
+fll-live-initramfs (2.2.2) unstable; urgency=low
+
+  * fix suggests from nbd to nbd-client.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Fri, 18 Dec 2009 21:20:54 +0100
+
+fll-live-initramfs (2.2.1) unstable; urgency=low
+
+  * don't specify fromhd volume group, because the previously used filter fails
+    on volumegroups containing a dash (which gets escaped to --).
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Tue, 15 Dec 2009 09:57:11 +0100
+
+fll-live-initramfs (2.2.0) unstable; urgency=low
+
+  * cherrypick nbd and lvm2 support from Niall Walsh's experimental dmsetup
+    snapshot branch.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Tue, 15 Dec 2009 09:05:52 +0100
+
+fll-live-initramfs (2.1.31) unstable; urgency=low
+
+  * Use blkid only for getting filesystem information and no longer
+    bother with fstype.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Sat, 14 Nov 2009 09:15:21 +1000
+
+fll-live-initramfs (2.1.30) unstable; urgency=low
+
+  * add fallback to blkid, klibc fstype fails to detect fat/ntfs
+
+ -- Niall Walsh <niallwalsh@users.berlios.de>  Sun, 18 Oct 2009 22:12:28 +0100
+
+fll-live-initramfs (2.1.29) unstable; urgency=low
+
+  * with USB CD-ROMs, it might take a while until /proc/sys/dev/cdrom/info
+    appears in procfs, only try to parse it if it's present/ readable.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Thu, 03 Sep 2009 02:59:12 +0200
+
+fll-live-initramfs (2.1.28) unstable; urgency=low
+
+  * drop fallback to vol_id, it has been dropped in udev 0.146-1.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Sat, 22 Aug 2009 16:08:43 +0200
+
+fll-live-initramfs (2.1.27) unstable; urgency=low
+
+  * Rework firmware cheat to make it clearer and loop to wait for devices
+
+ -- Niall Walsh <niallwalsh@users.berlios.de>  Wed, 12 Aug 2009 17:43:07 +0100
+
+fll-live-initramfs (2.1.26) unstable; urgency=low
+
+  * Add firmware cheat to copy ${FLL_IMAGE_DIR}/firmware/* to /lib/firmware
+
+ -- Niall Walsh <niallwalsh@users.berlios.de>  Thu, 06 Aug 2009 15:12:01 +0100
+
+fll-live-initramfs (2.1.25) unstable; urgency=low
+
+  * comment the magic number - (1024*1024) for unit conversion
+
+ -- Bernard Gray <bernard.gray@gmail.com>  Fri, 03 Jul 2009 09:07:21 +1000
+
+fll-live-initramfs (2.1.24) unstable; urgency=low
+
+  [ Bernard Gray ]
+  * replace `du -s` with `ls -l` for calculating filesizes (and adjust maths
+    accordingly)
+    - `ls` will handle busybox vers which don't implement `du`
+
+  [ Stefan Lippers-Hollmann ]
+  * bump standards version to 3.8.2, no changes necessary.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Thu, 02 Jul 2009 23:11:32 +0200
+
+fll-live-initramfs (2.1.23) unstable; urgency=low
+
+  * remove dpkg-trigger support again, we don't actually ship the
+    fll-live-initramfs package on the live media, resulting in the triggers
+    removing it from the actually used initrd again while purging
+    fll-live-initramfs.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Mon, 18 May 2009 20:44:20 +0200
+
+fll-live-initramfs (2.1.22) unstable; urgency=low
+
+  * Activate update-initramfs trigger via debian/triggers instead of
+    calling update-initramfs in postinst.
+  * Use minimal dh-centric debian/rules. Build-Depend on debhelper >=
+    7.0.50.
+  * Bump Standards-Version to 3.8.1, no other changes needed.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Mon, 18 May 2009 05:09:05 +1000
+
+fll-live-initramfs (2.1.21) unstable; urgency=low
+
+  * don't bail out if aufs/ unionfs modules cannot be loaded, current aufs2 can
+    only be built statically.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Mon, 09 Mar 2009 19:45:23 +0100
+
+fll-live-initramfs (2.1.20) unstable; urgency=low
+
+  * Fix awk usage in fll_finger_blockdevs() to not provide test command
+    with extra operands when > 1 optical device is present in system.
+  * Consider raw block devices after all of it's partitions.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Tue, 16 Dec 2008 05:18:59 +1000
+
+fll-live-initramfs (2.1.19) unstable; urgency=low
+
+  * make lintian happy and depend on ${misc:Depends}.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Mon, 08 Dec 2008 21:32:25 +0100
+
+fll-live-initramfs (2.1.18) unstable; urgency=low
+
+  * Fix fll_check_kernel test (was backwards and had a typo).
+
+ -- Niall Walsh <niallwalsh@users.berlios.de>  Thu, 23 Oct 2008 21:07:35 +0100
+
+fll-live-initramfs (2.1.17) unstable; urgency=low
+
+  * Recognise vmlinux as kernel image
+
+ -- Niall Walsh <niallwalsh@users.berlios.de>  Mon, 20 Oct 2008 17:25:49 +0100
+
+fll-live-initramfs (2.1.16) unstable; urgency=low
+
+  * Don't be too smart and try to probe block devices only once. We recently
+    changed this behaviour to forget about failed probes after three loops so
+    it is probably better just to remove the complexity altogether.
+  * Revert to using /proc/sys/dev/cdrom/info for cdrom device detection,
+    udevadm was not reliable enough to detect some external devices.
+  * Avoid disk type checking ps3d* block devices, udev currently does
+    not know much about them.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Sat, 18 Oct 2008 10:12:13 +1000
+
+fll-live-initramfs (2.1.15) unstable; urgency=low
+
+  * Use mkdir -p when creating base level directories, some package may
+    ship these.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Fri, 19 Sep 2008 00:58:16 +1000
+
+fll-live-initramfs (2.1.14) unstable; urgency=low
+
+  * Only canonicalize /dev/disk/by-* symlinks, otherwise we can get unexpected
+    results from persistent /dev/fll udev rule for cdrom devices.
+  * Don't bother with a comment filter when reading fll-init whitelist, the
+    script test handles this anyway.
+  * Overhaul fll_finger_blockdevs() to use /sys/block/* detection algorithm
+    along with udevadm to identify cdrom/disk devices similarly to
+    fll_fstab_generator.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Thu, 04 Sep 2008 00:09:25 +1000
+
+fll-live-initramfs (2.1.13) unstable; urgency=low
+
+  * Do not redefine dev variable in main mount loop, preserve it for use in
+    the udev rule for /dev/fll symlink.
+  * Hack fll_umount() to fallback to using umount's lazy option when a
+    standard umount call fails.
+  * Canonicalize FLL_MEDIA_FOUND variable before using it in udev rul
+    for /dev/fll symlinks.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Tue, 02 Sep 2008 04:06:32 +1000
+
+fll-live-initramfs (2.1.12) unstable; urgency=low
+
+  * Create udev rule for persistent symlink, /dev/fll, to device that live
+    media was found on. Create another symlink, /dev/fll-cdrom, if the device
+    was a dvd/cdrom.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Mon, 01 Sep 2008 06:48:27 +1000
+
+fll-live-initramfs (2.1.11) unstable; urgency=low
+
+  * Adapt for new udev location for persistent cd and net rules files.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Thu, 10 Jul 2008 14:50:35 +1000
+
+fll-live-initramfs (2.1.10) unstable; urgency=low
+
+  * Every 3rd loop of block device detection, forget about previously probed
+    block devices and force them to be re-probed.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Wed, 18 Jun 2008 11:54:30 +1000
+
+fll-live-initramfs (2.1.9) unstable; urgency=low
+
+  [ Kel Modderman ]
+  * When printing to screen which device is involved in a process, just crop
+    the leading /dev/ part of path, not the entire dirname. Makes using UUID
+    in usb/fromiso mode not look so queer.
+
+  [ Stefan Lippers-Hollmann ]
+  * bump standards version to 3.8.0, no changes necessary.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Sun, 08 Jun 2008 15:44:46 +0200
+
+fll-live-initramfs (2.1.8) unstable; urgency=low
+
+  * reintroduce vertical indentation through "Starting init
+    process..."
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Thu, 29 May 2008 15:13:21 +0200
+
+fll-live-initramfs (2.1.7) unstable; urgency=low
+
+  * Clear the console when no framebuffer is estimated to exist based on null
+    content of /proc/fb.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Thu, 29 May 2008 21:46:36 +1000
+
+fll-live-initramfs (2.1.6) unstable; urgency=low
+
+  * Ensure FLL_MOUNT_OPTS is unset in fll_mount().
+  * Just clear the pretty coloured text from console before proceeding with
+    standard init sequence, until someone debug's/fixes the console keymap
+    handling to not corrupt a framebufferless console.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Wed, 28 May 2008 11:06:16 +1000
+
+fll-live-initramfs (2.1.5) unstable; urgency=low
+
+  * Omit /media/* from potentially persistent aufs overlay by creating the dir
+    on root tmpfs as we do for dev, proc, sys and tmp already. This ensures a
+    clean /media/* in the persist use case.
+  * Create /dev /media /proc /sys and /selinux with mode 0755.
+  * Do not use -p "no error if existing" option when mkdir'ing /dev /media
+    /proc /sys /selinux and /tmp base level directories on the tmpfs.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Sat, 24 May 2008 13:08:52 +1000
+
+fll-live-initramfs (2.1.4) unstable; urgency=low
+
+  * Add debian/preinst to prohibit installation in non-chroot environments.
+  * Add debian/postinst to trigger update-initramfs.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Sat, 10 May 2008 15:27:18 +1000
+
+fll-live-initramfs (2.1.3) unstable; urgency=low
+
+  [ Kel Modderman ]
+  * Use dh centric debian/rules, build depend on debhelper >= 7.
+  * Add debian/install to replace what used to be done manually.
+
+  [ Stefan Lippers-Hollmann ]
+  * bump compat level to 7.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Wed, 07 May 2008 01:08:24 +0200
+
+fll-live-initramfs (2.1.2) unstable; urgency=low
+
+  * Remove startpar hack, lets not provide it as a real option here for now.
+  * Do not use -f (canonicalize) option to readlink, its not needed and klibc
+    realink doesn't support it.
+  * No need to override sleep, klibc's sleep will be used by default as of
+    busybox 1:1.9.2-2. Adjust versioned dependency on busybox.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Mon, 31 Mar 2008 18:53:43 +1000
+
+fll-live-initramfs (2.1.1) unstable; urgency=low
+
+  * Add shell functions to pedantically select the exact binary that will be
+    called as 'mount' and 'sleep'.
+  * Simplify return code usage in fll_mount().
+
+ -- Kel Modderman <kelvmod@gmail.com>  Tue, 25 Mar 2008 17:09:47 +1000
+
+fll-live-initramfs (2.1.0) unstable; urgency=low
+
+  * General shell flow cleanup of fll_finger_blockdevs().
+  * Unconditionally modprobe loop before loop-mounting files/devices.
+  * Don't hardcode the path to sleep.
+  * Print a progress bar as well as percentage metre when copying media to
+    ram.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Mon, 24 Mar 2008 22:58:40 +1000
+
+fll-live-initramfs (2.0.23) unstable; urgency=low
+
+  * Remove fallback detection of lzma infected squashfs images, klibc's fstype
+    utility is capable of its detection.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Sun, 23 Mar 2008 09:53:18 +1000
+
+fll-live-initramfs (2.0.22) unstable; urgency=low
+
+  * Due to indecision, we now "tweak" irqbalance initscript runlevel
+    configuration here, as we are do similar actions for other scripts at this
+    point.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Thu, 06 Mar 2008 16:12:08 +1000
+
+fll-live-initramfs (2.0.21) unstable; urgency=low
+
+  * Using the chroot's update-rc.d to unlink initscript symlinks from the
+    runlevel directories is overkill; it is slower and totally uneccessary. It
+    also make out initramfs hook more dependent on busybox.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Tue, 04 Mar 2008 14:44:02 +1000
+
+fll-live-initramfs (2.0.20) unstable; urgency=low
+
+  * Use the chroots update-rc.d to unlink blacklisted initscripts before
+    handing of to init.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Mon, 03 Mar 2008 01:05:00 +1000
+
+fll-live-initramfs (2.0.19) unstable; urgency=low
+
+  * Add a "startpar" cheatcode for testing of live parrallel booting with
+    insserv and startpar concurrency.
+  * Bugfix: do not clobber special init variable in scripts/fll.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Sun, 02 Mar 2008 11:20:58 +1000
+
+fll-live-initramfs (2.0.18) unstable; urgency=low
+
+  * Move irqbalance hack to where the other hacks live -> fll builder.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Sat, 01 Mar 2008 20:06:24 +1000
+
+fll-live-initramfs (2.0.17) unstable; urgency=low
+
+  * Add a quick and dirty hack to cleanup irqbalance runlevel configuration,
+    it need not stop anything in runlevels 0 and 6.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Fri, 29 Feb 2008 16:56:28 +1000
+
+fll-live-initramfs (2.0.16) unstable; urgency=low
+
+  * Make top level /selinux directory if not provided by the compressed
+    chroot.
+  * When processing /etc/default/fll-init, check for file comments properly.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Wed, 27 Feb 2008 18:21:51 +1000
+
+fll-live-initramfs (2.0.15) unstable; urgency=low
+
+  * yet another attempt to nuke SELINUX_INIT=NO.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Sat, 23 Feb 2008 23:04:31 +0100
+
+fll-live-initramfs (2.0.14) unstable; urgency=low
+
+  * reintroduce SELINUX_INIT=NO again, it's still needed.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Fri, 22 Feb 2008 23:35:16 +0100
+
+fll-live-initramfs (2.0.13) unstable; urgency=low
+
+  [ Kel Modderman ]
+  * fll hook exits if /etc/default/distro is not installed.
+  * fll hook no longer bothers to sed hack the FLL_DISTRO_MODE variable, it is
+    ignored by the fll boot script.
+
+  [ Stefan Lippers-Hollmann ]
+  * appease lintian and write (C) as © in debian/copyright.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Wed, 20 Feb 2008 22:15:16 +0100
+
+fll-live-initramfs (2.0.12) unstable; urgency=low
+
+  * Remove debian/README.Debian, it contained false information.
+  * Drop dependency on cdbs, debian/rules is now debhelper centric.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Tue, 19 Feb 2008 15:35:11 +1000
+
+fll-live-initramfs (2.0.11) unstable; urgency=low
+
+  * SELINUX_INIT=NO should no longer be required.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Thu, 07 Feb 2008 22:25:12 +0100
+
+fll-live-initramfs (2.0.10) unstable; urgency=low
+
+  * return to aufs as default unioning filesystem, unionfs up to and including
+    2.2.3 still tends to segfault udev.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Tue, 29 Jan 2008 13:12:52 +0100
+
+fll-live-initramfs (2.0.9) unstable; urgency=low
+
+  * update to debhelper compat 6.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Fri, 18 Jan 2008 23:21:08 +0100
+
+fll-live-initramfs (2.0.8) unstable; urgency=low
+
+  * give unionfs 2.2.x a chance and prefer it over aufs as default.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Wed, 16 Jan 2008 21:34:55 +0100
+
+fll-live-initramfs (2.0.7) unstable; urgency=low
+
+  * suggest lvm2, we need to to load/ detect lvm2 volumes in the generated
+    initramfs.
+  * run scripts in local-top before attemtping to mount anyting, lvm2 depends
+    on that.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Sun, 06 Jan 2008 01:44:27 +0100
+
+fll-live-initramfs (2.0.6) unstable; urgency=low
+
+  * Initial sqlzma support. fll_finger_fstype() now employs a fallback method
+    of filesystem detection by nibbling the first few bytes of the file and
+    grepping for a magic string.
+  * Don't export FSSIZE from fll_finger_fstype(), it has not been used.
+  * No need to do so much work to support sqlzma, revert a whole lot of code,
+    and submit a patch to fstype so that the dd detection fallback can die
+    soon.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Tue, 11 Dec 2007 19:24:16 +1000
+
+fll-live-initramfs (2.0.5) unstable; urgency=low
+
+  * update to Standards-Version 3.7.3, no changes necessary.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Mon, 03 Dec 2007 13:48:32 +0100
+
+fll-live-initramfs (2.0.4) unstable; urgency=low
+
+  * A little tidy up of awk code style and comments.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Thu, 22 Nov 2007 17:25:38 +1000
+
+fll-live-initramfs (2.0.3) unstable; urgency=low
+
+  * Fix persist case handling so it matches persist* as intended!
+
+ -- Niall Walsh <niallwalsh@users.berlios.de>  Thu, 01 Nov 2007 18:08:51 +0000
+
+fll-live-initramfs (2.0.2) unstable; urgency=low
+
+  * Create persist=foo cheatcode.   Normally sets the folder to find and use
+    on the fromhd device for persistance.  On fat sets the name of the file to
+    use for the loopback filesystem.
+
+ -- Niall Walsh <niallwalsh@users.berlios.de>  Sat, 27 Oct 2007 07:16:44 +0100
+
+fll-live-initramfs (2.0.1) unstable; urgency=low
+
+  * Mount vfat with umask=0 option.
+  * Fix ansi escape variable typo ${n} -> ${N}.
+  * Move block of code that remounts persistent union on native linux fs into
+    case construct.
+  * Add initial support for loop mounting a persistent filesystem-in-a-file on
+    vfat and msdos (possibly ntfs pending discussion). Thanks to "nico":
+    http://sidux.com/PNphpBB2-viewtopic-t-6518.html
+
+ -- Kel Modderman <kelvmod@gmail.com>  Tue, 23 Oct 2007 07:13:28 +1000
+
+fll-live-initramfs (2.0.0) unstable; urgency=low
+
+  * Bump major version.
+  * Cosmetic alteration of announced device names, strip leading pathnames to
+    remain short enough when using UUID in persistent mode for example.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Mon, 15 Oct 2007 12:14:42 +1000
+
+fll-live-initramfs (1.3.9) unstable; urgency=low
+
+  * Cosmetic fixup of output when fromhd= cheatcode is used; prevent a newline
+    from being printed on each loop of device detection.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Sun, 14 Oct 2007 21:33:45 +1000
+
+fll-live-initramfs (1.3.8) unstable; urgency=low
+
+  * Actually apply the original curly brace patch that was intended two
+    revisions ago.
+  * Add LABEL= and UUID= support to fromhd= cheatcode, we can leverage this to
+    improve our iso-on-usb mode.
+  * Adjust copyright headers of hook and script to reflect a valid copyright
+    holder, the FULLSTORY project is not an entity that can uphold them.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Fri, 12 Oct 2007 14:16:20 +1000
+
+fll-live-initramfs (1.3.7) unstable; urgency=low
+
+  * actually use curly braces in awk if/else if block in fll_cp_with_perc(),
+    thanks to Kel and Joaquim.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Fri, 12 Oct 2007 00:45:47 +0200
+
+fll-live-initramfs (1.3.6) unstable; urgency=low
+
+  * Loop wait for maximum 15 seconds after backgrounding copy of live image to
+    ram in fll_cp_with_perc() otherwise we may bail out to early when loading
+    from USB media in some circumstances.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Thu, 11 Oct 2007 23:24:42 +1000
+
+fll-live-initramfs (1.3.5) unstable; urgency=low
+
+  * Disable persistent udev rules (they should not exist in an as yet unbooted
+    chroot). We have "persistency" logic for data but we should remain
+    hardware agnostic.
+  * Remove alsa state file if it exists. It should only exist in a persistent
+    setup.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Thu, 11 Oct 2007 21:10:21 +1000
+
+fll-live-initramfs (1.3.4) unstable; urgency=low
+
+  [ Stefan Lippers-Hollmann ]
+  * update syntax for Vcs headers in debian/control
+
+  [ Kel Modderman ]
+  * Reversed logic of runlevel sanitization, we process a blacklist and not a
+    whitelist now.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Wed, 10 Oct 2007 22:15:13 +1000
+
+fll-live-initramfs (1.3.3) unstable; urgency=low
+
+  * Default mount option of noatime used for *nix fs.
+  * Simplify fll_mount return value handling.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Sat, 29 Sep 2007 08:21:10 +1000
+
+fll-live-initramfs (1.3.2) unstable; urgency=low
+
+  * add VCS control headers.
+  * add busybox to hard dependencies, it's only recommended by initramfs-tools
+    these days.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Wed, 12 Sep 2007 12:02:28 +0200
+
+fll-live-initramfs (1.3.1) unstable; urgency=low
+
+  * Simplify the init purge loop, and prepare to make fll-init.default safer.
+  * Modify grep of fll-init.default.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Fri, 24 Aug 2007 20:56:29 +1000
+
+fll-live-initramfs (1.3.0) unstable; urgency=low
+
+  * Minor version bump.
+  * Remove ide-generic/qemu workaround.
+  * Add a panic point for when initscript whitelist is not detected.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Thu, 02 Aug 2007 23:05:09 +1000
+
+fll-live-initramfs (1.2.39) unstable; urgency=low
+
+  * Don't announce anything after copying media to ram, what if we are not
+    copying from cd or dvd? Stay proper and do not say it at all.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Tue, 31 Jul 2007 22:33:19 +1000
+
+fll-live-initramfs (1.2.38) unstable; urgency=low
+
+  * Remove useless use of echo to expand shell regexp, use the regexp in for
+    loop directly.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Tue, 31 Jul 2007 08:07:47 +1000
+
+fll-live-initramfs (1.2.37) unstable; urgency=low
+
+  * To assist SysV-Init sanitization, removed hardcoded init script names from
+    here, instead grep a conffile that is generated at build time.
+  * Optimize SysV-Init sanitization, only grep fll-init once for each init
+    script, not for each runlevel link an init script may have.
+  * Hotfix for last commit, prepend $rootmnt to command that expects shell
+    expansion to occur.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Tue, 31 Jul 2007 01:33:26 +1000
+
+fll-live-initramfs (1.2.36) unstable; urgency=low
+
+  * cosmetic fix for SMP.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Mon, 30 Jul 2007 01:36:37 +0200
+
+fll-live-initramfs (1.2.35) unstable; urgency=low
+
+  * compress vertical white space for system info.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Sun, 29 Jul 2007 19:07:34 +0200
+
+fll-live-initramfs (1.2.34) unstable; urgency=low
+
+  * After toram succeeds, make it bleedingly obvious that the cd may be
+    ejected.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Fri, 13 Jul 2007 11:41:10 +1000
+
+fll-live-initramfs (1.2.33) unstable; urgency=low
+
+  * Put du -s $file into cmd variable, and pipe that through awk's getline.
+  * Put cmd into list of function variables in fll_cp_with_perc().
+
+ -- Kel Modderman <kelvmod@gmail.com>  Thu, 28 Jun 2007 20:56:38 +1000
+
+fll-live-initramfs (1.2.32) unstable; urgency=low
+
+  * Bugfix: typo while defining fll_cpuinfo, forgot to add () to signal it was
+    a function.
+  * fll_umount: grep /proc/mounts before umounting.
+  * toram related breakage fixes:
+    - give full path to cp on bg'd copy
+    - don't use size_dest < size_orig as a condition for the do/while loop
+    - keep track of percentage copied so far, only print in loop if perc < 100
+    - always print 100% on loop exit
+    - put the system call to sleep in condition of do-while statement
+    - no more need for unconditional sleep after loop, cp will have finished
+    - destfile on tmpfs will be marginally larger than that of origfile, use
+      size_of(destfile) >= orig_size as final comparison
+    - manual cleanup of /fll/toram on failure
+
+ -- Kel Modderman <kelvmod@gmail.com>  Tue, 26 Jun 2007 15:19:29 +1000
+
+fll-live-initramfs (1.2.31) unstable; urgency=low
+
+  * Rewrite fll_copy_with_perc() as a mostly awk function. This is a bit more
+    efficient than previous shell function and provides more stringent sanity
+    checking.
+  * Turn cpu info stuff into fll_cpuinfo() function.
+  * Remove extra useless FLL_SUPPRESS_PRINTK variable.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Tue, 26 Jun 2007 10:11:07 +1000
+
+fll-live-initramfs (1.2.30) unstable; urgency=low
+
+  * Improve output of kernel/initrd.img - iso mismatch detection.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Mon, 25 Jun 2007 08:10:22 +1000
+
+fll-live-initramfs (1.2.29) unstable; urgency=low
+
+  * Add fll_umount() to "umount and remove a stack of mount points".
+  * Use fll_umount() to process FLL_DOUMOUNT stack before every panic point.
+  * Add sanity check + panic point for case when wrong kernel/initrd
+    combination was used to boot live filesystem.
+  * Remove handling for unused fll=verbose and fll=init options.
+  * Don't purge single and killprocs from runlevel configuration, hopefully
+    allowing proper single user mode.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Sun, 24 Jun 2007 20:51:18 +1000
+
+fll-live-initramfs (1.2.28) unstable; urgency=low
+
+  * Add mountall.sh, mountall-bootclean.sh, mountnfs.sh and mountnfs-
+    bootclean.sh to initscript whitelist. This will improve persistency.
+  * Add a couple more break points.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Thu, 14 Jun 2007 20:21:55 +1000
+
+fll-live-initramfs (1.2.27) unstable; urgency=low
+
+  * Print big red warning if "1" is appended to cmdline. Runlevel 1 not
+    supported, use "single" instead.
+  * Don't allow initramfs to build without aufs.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Thu, 07 Jun 2007 13:09:36 +1000
+
+fll-live-initramfs (1.2.26) unstable; urgency=low
+
+  * Reduce the qemu hack to an unconditional last resort hack.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Tue, 05 Jun 2007 10:34:35 +1000
+
+fll-live-initramfs (1.2.25) unstable; urgency=low
+
+  * add an ugly hack to allow booting in qemu.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Mon, 04 Jun 2007 19:24:20 +0200
+
+fll-live-initramfs (1.2.24) unstable; urgency=low
+
+  * upload to sidux.com.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Sun, 03 Jun 2007 14:08:00 +0200
+
+fll-live-initramfs (1.2.23) unstable; urgency=low
+
+  * Add cupsys to service whitelist.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Sun, 03 Jun 2007 17:06:04 +1000
+
+fll-live-initramfs (1.2.22) unstable; urgency=low
+
+  * Refactor ansi escape sequence usage, abbreviate variable names to one
+    capital letter. Make "..." standard console colout to match with new init
+    output.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Sun, 03 Jun 2007 13:13:47 +1000
+
+fll-live-initramfs (1.2.21) unstable; urgency=low
+
+  * Add bootmisc.sh and rmnologin to standard init whitelist.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Sun, 03 Jun 2007 13:05:20 +1000
+
+fll-live-initramfs (1.2.20) unstable; urgency=low
+
+  * Add pcmciautils to service whitelist.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Sun, 03 Jun 2007 12:54:39 +1000
+
+fll-live-initramfs (1.2.19) unstable; urgency=low
+
+  * Default runlevel configuration is now done by fll-live-initscripts, legacy
+    initscripts-sidux-live are no longer supported as of this version.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Sun, 03 Jun 2007 09:56:51 +1000
+
+fll-live-initramfs (1.2.18) unstable; urgency=low
+
+  * Add gpm to the fll-live-initscripts whitelist.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Fri, 01 Jun 2007 00:02:00 +1000
+
+fll-live-initramfs (1.2.17) unstable; urgency=low
+
+  * Avoid exporting environment variables. They are only used in mountroot(),
+    define them there.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Thu, 31 May 2007 21:29:46 +1000
+
+fll-live-initramfs (1.2.16) unstable; urgency=low
+
+  * End this shell export madness.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Thu, 31 May 2007 18:52:46 +1000
+
+fll-live-initramfs (1.2.15) unstable; urgency=low
+
+  * No need for extraneous cd at end of mountroot().
+
+ -- Kel Modderman <kelvmod@gmail.com>  Thu, 31 May 2007 18:29:12 +1000
+
+fll-live-initramfs (1.2.14) unstable; urgency=low
+
+  * Also export SHELL, and cd / at tail of mountroot().
+
+ -- Kel Modderman <kelvmod@gmail.com>  Thu, 31 May 2007 17:18:50 +1000
+
+fll-live-initramfs (1.2.13) unstable; urgency=low
+
+  * Revert previous change, export HOME.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Thu, 31 May 2007 16:31:00 +1000
+
+fll-live-initramfs (1.2.12) unstable; urgency=low
+
+  * No longer export HOME for root login. It looks outright strange.
+    fll-live-initscripts will do it.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Thu, 31 May 2007 15:01:29 +1000
+
+fll-live-initramfs (1.2.11) unstable; urgency=low
+
+  * Allow module-init-tools initscript to run.
+  * Uploaded to sidux.net/kelmo.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Thu, 31 May 2007 13:26:24 +1000
+
+fll-live-initramfs (1.2.10) unstable; urgency=low
+
+  * Print something when doing sysvinit runlevel voodoo.
+  * Uploaded to sidux.net/kelmo.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Thu, 31 May 2007 12:05:56 +1000
+
+fll-live-initramfs (1.2.9) unstable; urgency=low
+
+  * Uploaded to sidux.net/kelmo.
+  * Trivial cleanup of fll_finger_blockdevs(), only do cdrom detection when we
+    haven't asked for fromiso/fromhd.
+  * Move static dev variable export to same position as other exports -> tail
+    of mountroot().
+  * Inform user boot process will continue from source media when toram fails.
+  * Alternative method of managing runlevel configuration of live filesystem
+    introduced for up and coming fll-live-initscripts. Sanitise runlevels
+    based on a initscript whitelist.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Thu, 31 May 2007 10:44:08 +1000
+
+fll-live-initramfs (1.2.8) unstable; urgency=low
+
+  * Reuse fll_string_not_in_strings() in fll_finger_blockdevs(). Move funtion
+    upwards of fll_finger_blockdevs() too.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Mon, 28 May 2007 14:08:21 +1000
+
+fll-live-initramfs (1.2.7) unstable; urgency=low
+
+  * Move unioned mount points to under /fll/ to reduce / pollution.
+  * Name union mount point same as module used.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Sun, 27 May 2007 22:40:21 +1000
+
+fll-live-initramfs (1.2.6) unstable; urgency=low
+
+  * Only suppress printk's when "quiet" kernel parameter is present in
+    /proc/cmdline.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Sun, 27 May 2007 18:53:47 +1000
+
+fll-live-initramfs (1.2.5) unstable; urgency=low
+
+  * Bugfix: used wrong operator between tests for FLL_FROMISO and FLL_PERSIST
+    in fll_finger_blockdevs(). This caused fromiso and fromhd to fail. Thanks
+    to cobra for detecting and reporting the regression.
+  * Quell the selinux error by disabling it at init time with an exported
+    environment variable.
+  * Our immutable shells are somehow inheriting this environment after a live
+    boot, export HOME here so that root bash login sources the expected
+    rcfiles.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Thu, 24 May 2007 20:58:57 +1000
+
+fll-live-initramfs (1.2.4) unstable; urgency=low
+
+  * md5sum every file and fail at end of operation rather than immediately
+    after one file fails verification. exit with status 0 otherwise.
+  * Print OK or FAILED for pass or failure of md5sum verification
+    respectively.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Mon, 21 May 2007 18:44:27 +1000
+
+fll-live-initramfs (1.2.3) unstable; urgency=low
+
+  * Don't set FLL_FROMHD for pesistency, instead add a check in
+    fll_finger_blockdevs() for persistency, and detect extra bloxk devices if
+    it is wanted.
+  * Add whitespace under md5sum announcement.
+  * Don't just check for existence of variables handled via cmdline parser,
+    check for a value of "yes".
+  * Check that FLL_PERSIST_* variable were set before attempting to prepare
+    persistency.
+  * Make a persistent filesystem whitelist to avoid breakage for now.
+  * Fix printf when remounting persistent copy-on-write filesystem.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Sun, 20 May 2007 21:29:00 +1000
+
+fll-live-initramfs (1.2.2) unstable; urgency=low
+
+  * Make md5sum check verbose and colourful by default.
+  * Bugfix typo's when using FLL_PERSIST* variables stored by main loop.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Sat, 19 May 2007 23:15:56 +1000
+
+fll-live-initramfs (1.2.1) unstable; urgency=low
+
+  * Ensure persistent mount point directory exists. It may not if toram was
+    used and the mount loop cleaned up redundant mount point.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Sat, 19 May 2007 11:49:21 +1000
+
+fll-live-initramfs (1.2.0) unstable; urgency=low
+
+  * Add most basic persistency based setup suitable for poor man
+    installation's on native read-writeable filesystems. Thanks bfree for
+    initial concept, hopefully more to come.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Fri, 18 May 2007 22:16:37 +1000
+
+fll-live-initramfs (1.1.6) unstable; urgency=low
+
+  * Initial attempt at md5sum checking within initramfs.
+  * Add FLL_VERBOSITY variable activated by fll=verbose boot parameter.
+  * Use FLL_VERBOSITY switch in fll_md5sum_check() for verbosity++.
+  * Add "md5sum" as keyword for md5 check cheatcode.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Fri, 18 May 2007 20:20:02 +1000
+
+fll-live-initramfs (1.1.5) unstable; urgency=low
+
+  * Add extra break point at moment fll live filesystem is found.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Fri, 18 May 2007 07:38:50 +1000
+
+fll-live-initramfs (1.1.4) unstable; urgency=low
+
+  * s/var_not_in_var()/fll_string_not_in_strings()/
+  * s/copy_with_perc()/fll_copy_with_perc()/
+  * Add 3 second buffer before exiting fll_copy_with_perc() as there was an
+    existing race condition between exiting the function and attempting
+    fll_mount() on the just copied file. Any sleep time greater than that in
+    loop interval should suffice.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Sun, 13 May 2007 19:16:19 +1000
+
+fll-live-initramfs (1.1.3) unstable; urgency=low
+
+  * Decrease the interval of device scans in main "mount loop" from 5 seconds
+    to 3.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Fri, 11 May 2007 18:43:25 +1000
+
+fll-live-initramfs (1.1.2) unstable; urgency=low
+
+  * Use dmask=0022,fmask=0133 ntfs mount options rather than hardcoded
+    uid/gid.
+  * Allow distro-defaults to set union mount point names, provide fallbacks.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Wed, 09 May 2007 08:20:55 +1000
+
+fll-live-initramfs (1.1.1) unstable; urgency=low
+
+  * Dissolve size_of_file() into copy_with_perc(), its not used anywhere else
+    and sufficiently small enough to dissolve.
+  * More efficient use of printf in copy_with_perc(). Set colour at top and
+    bottom of while loop, not within in each loop.
+  * Dissolve fll_parse_cmdline() into mountroot(), it has no real purpose
+    being a seperate function.
+  * s/probed_cdroms/FLL_PROBED_CDROMS/g
+
+ -- Kel Modderman <kelvmod@gmail.com>  Sun, 06 May 2007 13:33:47 +1000
+
+fll-live-initramfs (1.1.0) unstable; urgency=low
+
+  * Prolong printk surpression to after init takes over.
+  * s/slumber/FLL_ROOTDELAY/g
+  * Don't make device scan interval configurable, there is no need for it to
+    be.
+  * Don't test for empty variables when adding variables to variable stack, no
+    need to be so prudent.
+  * Add percentage progress functions for toram live media copy.
+  * Gracefully handle failure of toram copy and continue booting from the
+    medium on which the live media was detected. Add toram mount point to
+    FLL_DOUMOUNT stack for removal at end of loop.
+  * Only print "Probing devices" if we have actually probed at least one
+    device with success.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Sat, 05 May 2007 20:47:19 +1000
+
+fll-live-initramfs (1.0.78) unstable; urgency=low
+
+  * Use bind mount links for $rootmnt -> rw union.
+  * Put all "live" mounts in /fll and not in /mnt namespace to reduce room for
+    confusion.
+  * Leave /home, /media and /mnt in the rw union.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Sat, 05 May 2007 09:27:10 +1000
+
+fll-live-initramfs (1.0.77) unstable; urgency=low
+
+  * Fix toram handling once again:
+    - don't update FLL_BLOCKMNT location until previous location has been
+      added to FLL_DOUMOUNT stack
+    - update FLL_DOMOVEMOUNT after FLL_BLOCKMNT location has been updated
+
+ -- Kel Modderman <kelvmod@gmail.com>  Fri, 04 May 2007 07:55:34 +1000
+
+fll-live-initramfs (1.0.76) unstable; urgency=low
+
+  * Fix toram mountpoint location handling.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Fri, 04 May 2007 01:31:56 +1000
+
+fll-live-initramfs (1.0.75) unstable; urgency=low
+
+  * Mount all fll related stuff under /mnt/fll/*.
+  * Put toram contents on tmpfs in /mnt/fll/toram/*.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Thu, 03 May 2007 22:41:45 +1000
+
+fll-live-initramfs (1.0.74) unstable; urgency=low
+
+  * We should not assume that the union mount point contains all directories
+    that the read only compressed fielsystem does. We rely on the union mount
+    to have this quality, so use its contents as basis for symlinks on
+    $rootmnt.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Mon, 30 Apr 2007 15:42:51 +1000
+
+fll-live-initramfs (1.0.73) unstable; urgency=low
+
+  [ Kel Modderman ]
+  * Ban more commercialisms in cpu name string.
+  * Provide means of falling back to aufs union support, in the event that it
+    was not mentioned on cmdline.
+
+  [ Stefan Lippers-Hollmann ]
+  * remove live-initrd-sidux dummy package.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Sun, 29 Apr 2007 13:51:51 +0200
+
+fll-live-initramfs (1.0.72) unstable; urgency=low
+
+  * Clean up comment style, no need for these stupid double ## header and
+    footer that was being used before.
+  * Make comment style consistent throughout scripts/fll.
+  * Reduce fll_setup_dev_loop, remove unrequired variable fll_ready and return
+    as soon as loop device nodes become available. Keep mknod hack commented
+    out and present for histories sake.
+  * Surpress printk's for duration of mountroot(), usb noise was destroying the
+    pretty output.
+  * Print a new line for every failed media probe.
+  * Clear FLL_BLOCKDEVS at top of each loop.
+  * Introduce new FLL_BLOCKDEVS_NEW variable that acts as a transient list of
+    new devices that exist now, but not on previous loop.
+  * Expand cpuinfo awk parser over more lines. Chomp excess whitespace from
+    cpu name.
+  * Replace fstype fallback of vol_id. klibc's fstype does a lousy job of
+    identifying M$ filesystems. Ensure it is in initramfs with a copy_exec in
+    hooks/fll.
+  * Introduce var_not_in_var() to identify devices not yet probed. Previous
+    detection was not optimal.
+  * Remove (tm) and (R) from cpu model name.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Thu, 26 Apr 2007 23:23:23 +1000
+
+fll-live-initramfs (1.0.71) unstable; urgency=low
+
+  * Stop with the bind mount/symlink indecision, do that only for /home and
+    /root cosmetics and reinstate /dev special handling.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Wed, 25 Apr 2007 23:36:40 +1000
+
+fll-live-initramfs (1.0.70) unstable; urgency=low
+
+  * Turn our mknod /dev/loop* device node hack into a panic point and see
+    if/when/who ever hits the case of no loop device nodes again. Keep the 5
+    second device node creation buffer to help avoid racy conditions between
+    modprobe loop, and mount -o loop.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Wed, 25 Apr 2007 23:20:11 +1000
+
+fll-live-initramfs (1.0.69) unstable; urgency=low
+
+  * Again experiment with numourous bind mounts instead of symlinks. Keep /bin
+    and /sbin as anchored symlinks for now.
+  * Hopefully no_static_dev workaround is not required for /dev anymore.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Wed, 25 Apr 2007 22:53:25 +1000
+
+fll-live-initramfs (1.0.68) unstable; urgency=low
+
+  * Don't mount --bind every dir from $rootmnt to real mountpoint, this
+    would behave poorly on shutdown. Do this only for /home and /root
+    (cosmetically superior) and reinstate relative symlink farm for all
+    remaining dirs.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Wed, 25 Apr 2007 22:11:24 +1000
+
+fll-live-initramfs (1.0.67) unstable; urgency=low
+
+  * DO NOT RELEASE
+  * Add timeout loop of 5 seconds after modprobing loop module for device nodes
+    to appear in attempt to debug suspected race condition that caused us to
+    introduce ugly an mknod hack earlier.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Wed, 25 Apr 2007 21:35:24 +1000
+
+fll-live-initramfs (1.0.66) unstable; urgency=low
+
+  * DO NOT RELEASE
+  * Experiment with a mount -o bind farm on $rootmnt instead of minor link
+    farm.
+  * Retroactively fix up previous unreleased changelog entries.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Wed, 25 Apr 2007 17:05:46 +1000
+
+fll-live-initramfs (1.0.65) unstable; urgency=low
+
+  * DO NOT RELEASE
+  * Enforce restriction on probing block devices other than cdrom's,
+    fromiso/fromhd cheatcodes are required for that functionality.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Wed, 25 Apr 2007 13:21:34 +1000
+
+fll-live-initramfs (1.0.64) unstable; urgency=low
+
+  * DO NOT RELEASE
+  * Add experimental timed loop device probe. We now wait for an interval of
+    time and do a probe for live media on new devices discovered during that
+    time. This process continues until we reach an upper limit of time.
+  * Add filesystem blacklist to fll_mount().
+
+ -- Kel Modderman <kelvmod@gmail.com>  Wed, 25 Apr 2007 12:29:10 +1000
+
+fll-live-initramfs (1.0.63) unstable; urgency=low
+
+  * bump version number to circumvent package conflicts.
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Mon, 23 Apr 2007 19:47:38 +0200
+
+fll-live-initramfs (1.0.62) unstable; urgency=low
+
+  * Put /home on the union COW.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Mon, 23 Apr 2007 22:33:13 +1000
+
+fll-live-initramfs (1.0.61) unstable; urgency=low
+
+  * Put /media on the ramdisk.
+  * Add an extra panic point after moving all mounts to $rootmnt.
+    ${rootmnt}${FLL_MOUNTPOINT} must be moved into new root.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Mon, 23 Apr 2007 21:21:13 +1000
+
+fll-live-initramfs (1.0.60) unstable; urgency=low
+
+  * Inhibit printk's while mounting various filesystems.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Mon, 23 Apr 2007 18:26:00 +1000
+
+fll-live-initramfs (1.0.59) unstable; urgency=low
+
+  * Reverse printing of 2 carriage returns rather than 1 when iso has been
+    detected before, should print only 1 in that case and 2 every other time.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Sun, 22 Apr 2007 23:42:42 +1000
+
+fll-live-initramfs (1.0.58) unstable; urgency=low
+
+  * Remove print of leading [ in device probe, it is not required now.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Sun, 22 Apr 2007 23:20:28 +1000
+
+fll-live-initramfs (1.0.57) unstable; urgency=low
+
+  * Clean up print out of devices in device scan.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Sun, 22 Apr 2007 23:01:56 +1000
+
+fll-live-initramfs (1.0.56) unstable; urgency=low
+
+  * Don't try and mount iso from bogus moint point, FLL_BLOCKMNT was being
+    updated too soon.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Sun, 22 Apr 2007 22:12:23 +1000
+
+fll-live-initramfs (1.0.55) unstable; urgency=low
+
+  * Fix fromiso, forgot to prepend FLL_BLOCKMNT to iso name when probing for
+    fstype.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Sun, 22 Apr 2007 20:55:13 +1000
+
+fll-live-initramfs (1.0.54) unstable; urgency=low
+
+  * Fix permissions of /tmp for user access. Thanks to x-un-i for debugging!
+
+ -- Kel Modderman <kelvmod@gmail.com>  Sun, 22 Apr 2007 19:48:47 +1000
+
+fll-live-initramfs (1.0.53) unstable; urgency=low
+
+  * Further cleanup of console output.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Sun, 22 Apr 2007 16:12:45 +1000
+
+fll-live-initramfs (1.0.52) unstable; urgency=low
+
+  * More output handling ehancements.
+  * Make minimum allowances for possible link farm approach. The approach is
+    not yet implimented, nor even planned yet.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Sun, 22 Apr 2007 15:48:36 +1000
+
+fll-live-initramfs (1.0.51) unstable; urgency=low
+
+  * Clean up output, and make output more verbose.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Sun, 22 Apr 2007 14:48:38 +1000
+
+fll-live-initramfs (1.0.50) unstable; urgency=low
+
+  * Bug fix typo in loop that is meant to purge etc/rc*.d for clean live boot
+    with live-autoconfig.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Sun, 22 Apr 2007 14:03:35 +1000
+
+fll-live-initramfs (1.0.49) unstable; urgency=low
+
+  * Port linuxrc hack over to cleanse /etc/rc?.d/ from debians initscripts,
+    and link up those of initscripts-$distro-live.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Sun, 22 Apr 2007 13:41:45 +1000
+
+fll-live-initramfs (1.0.48) unstable; urgency=low
+
+  * Try another variation of union COW setup.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Sun, 22 Apr 2007 12:08:10 +1000
+
+fll-live-initramfs (1.0.47) unstable; urgency=low
+
+  * Mark /UNIONFS setup as broken.
+  * Visual enhancements.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Sun, 22 Apr 2007 04:36:08 +1000
+
+fll-live-initramfs (1.0.46) unstable; urgency=low
+
+  * Attempted bugfix at wrong union COW setup.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Sun, 22 Apr 2007 04:19:57 +1000
+
+fll-live-initramfs (1.0.45) unstable; urgency=low
+
+  * Delay movement of staged mounts until end of mountroot()
+  * Remove delete=whiteout option for unionfs mount, for now.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Sun, 22 Apr 2007 03:47:34 +1000
+
+fll-live-initramfs (1.0.44) unstable; urgency=low
+
+  * Fix unionfs usage, symlinks to compressed filesystem should be pointing at
+    unions COW mount, not the read only squashfs mount.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Sun, 22 Apr 2007 03:27:07 +1000
+
+fll-live-initramfs (1.0.43) unstable; urgency=low
+
+  * Try different position for /UNIONFS setup.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Sun, 22 Apr 2007 03:12:36 +1000
+
+fll-live-initramfs (1.0.42) unstable; urgency=low
+
+  * Very rough initial rw union attempt.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Sun, 22 Apr 2007 03:05:13 +1000
+
+fll-live-initramfs (1.0.41) unstable; urgency=low
+
+  * Add 32M hard limit for memory required on top of toram tmpfs size.
+  * Many many comment cleanups, formatting tweaks and positional changes of
+    variables and code blocks.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Sun, 22 Apr 2007 02:10:37 +1000
+
+fll-live-initramfs (1.0.40) unstable; urgency=low
+
+  * Comment cleansing.
+  * Remove the 16M addition to toram tmpfs calculation, instead increase
+    buffer percentage to 15%.
+  * Make base tmpfs consume 90% of system memory.
+  * Add man panic points to catch cases that simply should not fail unless
+    something is terribly wrong.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Sat, 21 Apr 2007 23:38:38 +1000
+
+fll-live-initramfs (1.0.39) unstable; urgency=low
+
+  * Try mounting a tmpfs over $rootmnt in attempt to appease run-init.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Sat, 21 Apr 2007 14:10:35 +1000
+
+fll-live-initramfs (1.0.38) unstable; urgency=low
+
+  * Again try the symlink dance, this time avoid stuffing around with static
+    dev filesystem by exporting a variable that disables that behaviour in
+    udev script.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Fri, 20 Apr 2007 12:09:58 +1000
+
+fll-live-initramfs (1.0.37) unstable; urgency=low
+
+  * Fix up comments about failing cases.
+  * No longer export PATH with extended scope.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Fri, 20 Apr 2007 11:24:23 +1000
+
+fll-live-initramfs (1.0.36) unstable; urgency=low
+
+  * Fixed pushing of wrong variable onto domovemount stack.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Fri, 20 Apr 2007 00:29:23 +1000
+
+fll-live-initramfs (1.0.35) unstable; urgency=low
+
+  * Do the full circle: prepare $rootmount with backwards compatible mount
+    point positions. Need to rethink how to properly setup the rest of it.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Fri, 20 Apr 2007 00:09:27 +1000
+
+fll-live-initramfs (1.0.34) unstable; urgency=low
+
+  * Add FLL_DOMOVEMOUNT stack to large mount loop to track mount moints that
+    should be moved to $rootmnt after live filesystem has been prepared there.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Thu, 19 Apr 2007 23:42:28 +1000
+
+fll-live-initramfs (1.0.33) unstable; urgency=low
+
+  * Revert all previos braindamage, just loop mount the live media image on
+    $rootmnt for now.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Thu, 19 Apr 2007 23:16:52 +1000
+
+fll-live-initramfs (1.0.32) unstable; urgency=low
+
+  * Try mounting compressed fs on / rather than $rootmnt.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Thu, 19 Apr 2007 22:16:38 +1000
+
+fll-live-initramfs (1.0.31) unstable; urgency=low
+
+  * Try in vain to again strip leading / from base symlink target (to
+    FLL_MOUNTPOINT).
+
+ -- Kel Modderman <kelvmod@gmail.com>  Thu, 19 Apr 2007 21:36:49 +1000
+
+fll-live-initramfs (1.0.30) unstable; urgency=low
+
+  * Add very hackish hacks for /dev and run-init issues faced while setting up
+    base symlinks.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Thu, 19 Apr 2007 21:24:20 +1000
+
+fll-live-initramfs (1.0.29) unstable; urgency=low
+
+  * Add an absolute fll-bottom break point.
+  * Really care for /dev.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Thu, 19 Apr 2007 20:51:10 +1000
+
+fll-live-initramfs (1.0.28) unstable; urgency=low
+
+  * 10% buffer on top of compressed filesystem size for toram tmpfs inode
+    buffer.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Thu, 19 Apr 2007 20:25:35 +1000
+
+fll-live-initramfs (1.0.27) unstable; urgency=low
+
+  * Add fll specific break points.
+  * Revert shell substitution that removed leading / from FLL_MOUNTMOINT when
+    creating symlinks in rootmnt.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Thu, 19 Apr 2007 20:14:59 +1000
+
+fll-live-initramfs (1.0.26) unstable; urgency=low
+
+  * Attempt 2 at alternative dev proc sys setup, this time (hopefully) without
+    brainfarts.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Thu, 19 Apr 2007 16:50:41 +1000
+
+fll-live-initramfs (1.0.25) unstable; urgency=low
+
+  * Fix syntax of previous commit.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Thu, 19 Apr 2007 16:23:13 +1000
+
+fll-live-initramfs (1.0.24) unstable; urgency=low
+
+  * Try different approach with dev proc sys preparation, previous approach
+    broke init-bottom/udev, possibly due to poor permissions.
+  * Bugfix symlinkage.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Thu, 19 Apr 2007 16:10:03 +1000
+
+fll-live-initramfs (1.0.23) unstable; urgency=low
+
+  * Proof of concept functionality only.
+  * Bugfix mknod creation hack.
+  * Create dev proc and sys base dir's.
+ -- Kel Modderman <kelvmod@gmail.com>  Thu, 19 Apr 2007 15:26:28 +1000
+
+fll-live-initramfs (1.0.22) unstable; urgency=low
+
+  * Proof of concept functionality only.
+  * Improve output formatting of live media probe loop.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Thu, 19 Apr 2007 14:29:53 +1000
+
+fll-live-initramfs (1.0.21) unstable; urgency=low
+
+  * Proof of concept functionality only.
+  * Improve output formatting of live media probe loop.
+  * Skip a few base symlinks (/dev, /proc, /sys).
+
+ -- Kel Modderman <kelvmod@gmail.com>  Thu, 19 Apr 2007 13:16:38 +1000
+
+fll-live-initramfs (1.0.20) unstable; urgency=low
+
+  * Proof of concept functionality only.
+  * Initial start to live media mountpoint symlink voodoo.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Wed, 18 Apr 2007 21:29:06 +1000
+
+fll-live-initramfs (1.0.19) unstable; urgency=low
+
+  * Output formatting.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Wed, 18 Apr 2007 02:00:36 +1000
+
+fll-live-initramfs (1.0.18) unstable; urgency=low
+
+  * Bugfix toram, use du to calculate required free ram for toram.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Wed, 18 Apr 2007 01:45:06 +1000
+
+fll-live-initramfs (1.0.17) unstable; urgency=low
+
+  * Trivial cleanups and output formatting.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Wed, 18 Apr 2007 01:36:37 +1000
+
+fll-live-initramfs (1.0.16) unstable; urgency=low
+
+  * Proof of concept functionality only.
+  * Tidy up of output.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Wed, 18 Apr 2007 01:04:56 +1000
+
+fll-live-initramfs (1.0.15) unstable; urgency=low
+
+  * Fix syntax error.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Wed, 18 Apr 2007 00:27:40 +1000
+
+fll-live-initramfs (1.0.14) unstable; urgency=low
+
+  * Proof of concept functionality only.
+  * Use panic() in fatal failure situations.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Wed, 18 Apr 2007 00:13:28 +1000
+
+fll-live-initramfs (1.0.13) unstable; urgency=low
+
+  * Proof of concept functionality only.
+  * Print more info about what is going on.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Tue, 17 Apr 2007 23:31:40 +1000
+
+fll-live-initramfs (1.0.12) unstable; urgency=low
+
+  * Proof of concept functionality only.
+  * Add initial toram handling.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Tue, 17 Apr 2007 22:40:13 +1000
+
+fll-live-initramfs (1.0.11) unstable; urgency=low
+
+  * Proof of concept functionality only.
+  * Add initial fromiso handling.
+  * Add mount-points-to-be-umounted stack concept.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Tue, 17 Apr 2007 21:34:04 +1000
+
+fll-live-initramfs (1.0.10) unstable; urgency=low
+
+  * Proof of concept functionality only.
+  * Move squasfs image mountpoint to traditional position.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Tue, 17 Apr 2007 20:03:43 +1000
+
+fll-live-initramfs (1.0.9) unstable; urgency=low
+
+  * Proof of concept functionality only.
+  * Extend live media detection to actually do something with squashfs image.
+  * Add debug and verbose variants to fll= cmdline option.
+  * Fallback to using vol_id if present and fstype failed to finger filesystem
+    type of object.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Tue, 17 Apr 2007 15:07:26 +1000
+
+fll-live-initramfs (1.0.8) unstable; urgency=low
+
+  * Proof of concept functionality only.
+  * Minor cleanups, poised to handle mount of compressed fs.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Tue, 17 Apr 2007 00:04:26 +1000
+
+fll-live-initramfs (1.0.7) unstable; urgency=low
+
+  * Proof of concept functionality only.
+  * Initial port of moiuntit().
+  * Very crude beginnings of FLL_IMAGE_LOCATION probe on all block devices.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Mon, 16 Apr 2007 23:46:59 +1000
+
+fll-live-initramfs (1.0.6) unstable; urgency=low
+
+  * Proof of concept functionality only.
+  * Use printf for colourful output and enhanced formatting.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Mon, 16 Apr 2007 20:34:43 +1000
+
+fll-live-initramfs (1.0.5) unstable; urgency=low
+
+  * Proof of concept functionality only.
+  * Give priority to cdroms when autoprobing all block devices.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Mon, 16 Apr 2007 01:04:48 +1000
+
+fll-live-initramfs (1.0.4) unstable; urgency=low
+
+  * Proof of concept functionality only.
+  * Tidy up colourful hello world.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Mon, 16 Apr 2007 00:08:16 +1000
+
+fll-live-initramfs (1.0.3) unstable; urgency=low
+
+  * Proof of concept functionality only.
+  * Add initial functions for probing local block devices and determining
+    fstype.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Sun, 15 Apr 2007 23:41:39 +1000
+
+fll-live-initramfs (1.0.2) unstable; urgency=low
+
+  * Proof of concept functionality only.
+  * Remove fll-common shlib script.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Sun, 15 Apr 2007 22:43:19 +1000
+
+fll-live-initramfs (1.0.1) unstable; urgency=low
+
+  * Proof of concept functionality only.
+  * Extend hello world, now with colours.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Sun, 15 Apr 2007 22:07:01 +1000
+
+fll-live-initramfs (1.0.0) unstable; urgency=low
+
+  * Initial Release.
+  * Proof of concept functionality only.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Fri, 06 Apr 2007 23:06:51 +1000

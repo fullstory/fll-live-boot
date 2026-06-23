@@ -1,0 +1,431 @@
+#!/bin/sh
+#
+# F.U.L.L.S.T.O.R.Y initramfs live media mount script
+#
+# Copyright: (C) 2025-2026, Kel Modderman <kelvmod@gmail.com>
+# License:   GPLv2
+#
+# F.U.L.L.S.T.O.R.Y Project Homepage:
+# https://github.com/fullstory
+#
+# This script:
+#  * inspects a block device/partition for the UUID of the carrier
+#    filesystem (iso9660) containing the readonly rootfs images, or the
+#    UUID of the readonly rootfs itself (i.e. erofs exposed by hybrid GPT)
+#  * mounts readonly rootfs and sets up COW/tmpfs overlay
+#  * creates a symlink to the readonly rootfs image for use by calamares
+#  * create udev rule for persistent symlink to device live media was found on
+#  * updates live username variable if given on boot cmdline
+#  * configures live hostname, timezone, and getty
+
+fll_say()
+{
+    if [ -n "${FLL_PLYMOUTH}" ]; then
+        plymouth display-message --text="${@}"
+    else
+        printf "${@}"
+    fi
+}
+
+fll_toram()
+{
+    fll_say "Copying rootfs to ram: ${1} ..."
+    dd if="${1}" of="${2}" bs=1M status=none
+    return "${?}"
+}
+
+PATH=/usr/sbin:/usr/bin:/sbin:/bin
+
+if grep -qw -E 'fll[.=]debug' /proc/cmdline; then
+    set -x
+    env
+fi
+
+[ -n "${ID_FS_TYPE}" ] || ID_FS_TYPE="$(blkid -s TYPE -o value ${DEVNAME})"
+
+case "${ID_FS_TYPE}" in
+    iso9660|ext*|btrfs|jfs|f2fs|xfs|ntfs|vfat|exfat|udf|erofs)
+        :
+        ;;
+    *)
+        exit 1
+        ;;
+esac
+
+[ -n "${ID_FS_UUID}" ] || ID_FS_UUID="$(blkid -s UUID -o value ${DEVNAME})"
+
+# source distro-defaults
+[ -s /etc/default/distro ] && . /etc/default/distro
+
+FLL_COPY_TORAM=""
+FLL_CUSTOM_HOSTNAME=""
+FLL_CUSTOM_TZ=""
+FLL_FROMHD=""
+FLL_FROMISO=""
+FLL_ISO_UUID=""
+FLL_ROOTFS_UUID=""
+FLL_PERSIST_UUID=""
+FLL_PERSIST_LUKS_UUID=""
+FLL_PLYMOUTH=""
+
+if type plymouth > /dev/null 2>&1 && plymouth --ping; then
+    FLL_PLYMOUTH="yes"
+fi
+
+# parse fll options given on cmdline
+for opt in $(cat /proc/cmdline); do
+    case "${opt}" in
+        fromiso=*)
+            FLL_FROMISO="${opt#fromiso=}"
+            ;;
+        fromhd=*)
+            # support for grub2-fll-fromiso: if fromhd=UUID= or
+            # fromhd=/dev/disk/by-uuid/ or is provided then only accept block
+            # devices with matching ID_FS_UUID.
+            FLL_FROMHD="${opt#fromhd=}"
+            case "${FLL_FROMHD}" in
+                UUID=*)
+                    [ "${FLL_FROMHD#UUID=}" = "${ID_FS_UUID}" ] || exit 1
+                    ;;
+                /dev/disk/by-uuid/*)
+                    [ "${FLL_FROMHD#/dev/disk/by-uuid/}" = "${ID_FS_UUID}" ] || exit 1
+                    ;;
+                /dev/*)
+                    [ "$(readlink -f ${FLL_FROMHD})" = "${DEVNAME}" ] || exit 1
+                    ;;
+            esac
+            ;;
+        hostname=*)
+            FLL_CUSTOM_HOSTNAME="${opt#hostname=}"
+            ;;
+        image_dir=*)
+            FLL_IMAGE_DIR="${opt#image_dir=}"
+            FLL_IMAGE_LOCATION="${FLL_IMAGE_DIR}/${FLL_IMAGE_FILE}"
+            ;;
+        image_file=*)
+            FLL_IMAGE_FILE="${opt#image_file=}"
+            FLL_IMAGE_LOCATION="${FLL_IMAGE_DIR}/${FLL_IMAGE_FILE}"
+            ;;
+        iso_uuid=*)
+            FLL_ISO_UUID="${opt#iso_uuid=}"
+            ;;
+        noeject)
+            mkdir -p /run/fll
+            : > /run/fll/fll.noeject
+            ;;
+        persist_luks_uuid=*)
+            FLL_PERSIST_LUKS_UUID="${opt#persist_luks_uuid=}"
+            ;;
+        persist_uuid=*)
+            FLL_PERSIST_UUID="${opt#persist_uuid=}"
+            ;;
+        rootfs_uuid=*)
+            FLL_ROOTFS_UUID="${opt#rootfs_uuid=}"
+            ;;
+        toram)
+            FLL_COPY_TORAM="yes"
+            ;;
+        tz=*)
+            FLL_CUSTOM_TZ="${opt#tz=}"
+            ;;
+        username=*)
+            FLL_LIVE_USER="${opt#username=}"
+            ;;
+        utc=yes)
+            UTC="yes"
+            ;;
+        utc|gmt)
+            FLL_CUSTOM_TZ="Etc/UTC"
+            ;;
+    esac
+done
+
+if [ "${NEWROOT}" ]; then
+    # dracut
+    FLL_ROOTFS_MNT="${NEWROOT}"
+else
+    # initramfs-tools
+    FLL_ROOTFS_MNT="${rootmnt:-/root}"
+fi
+FLL_ISOMEDIA_MNT=""
+FLL_READONLY_MNT=""
+FLL_READONLY_FILE=""
+FLL_READONLY_FSTYPE=""
+FLL_BLOCKDEV_MNT=""
+if [ -n "${FLL_FROMISO}" ] || [ -z "${FLL_PERSIST_UUID}" ]; then
+    FLL_READONLY_MNT="/run/fll/${FLL_ISO_UUID}"
+    FLL_BLOCKDEV_MNT="/run/fll/${DEVNAME#/dev/}"
+    mkdir -p "${FLL_BLOCKDEV_MNT}"
+    mount -t "${ID_FS_TYPE}" -o ro "${DEVNAME}" "${FLL_BLOCKDEV_MNT}"
+
+    # iso9660 filesystem on block device (cd/dvd/usb)
+    if [ "${ID_FS_UUID}" = "${FLL_ISO_UUID}" ] && [ -f "${FLL_BLOCKDEV_MNT}/${FLL_IMAGE_LOCATION}" ]; then
+        FLL_ISOMEDIA_MNT="${FLL_BLOCKDEV_MNT}"
+    # iso file on filesystem (fromiso=)
+    elif [ -f "${FLL_BLOCKDEV_MNT}/${FLL_FROMISO#/}" ] && \
+        [ "$(blkid -s UUID -o value ${FLL_BLOCKDEV_MNT}/${FLL_FROMISO#/})" = "${FLL_ISO_UUID}" ]; then
+        FLL_ISOMEDIA_MNT="/run/fll/fromiso"; mkdir -p "${FLL_ISOMEDIA_MNT}"
+        mount -t iso9660 -o ro "${FLL_BLOCKDEV_MNT}/${FLL_FROMISO#/}" "${FLL_ISOMEDIA_MNT}"
+    # no iso media detected by UUID
+    else
+        umount "${FLL_BLOCKDEV_MNT}"
+        exit 1
+    fi
+
+    # toram support
+    if [ "${FLL_COPY_TORAM}" = "yes" ]; then
+        mkdir -p /run/fll/toram
+        if mount -n -t tmpfs -o size=90% tmpfs /run/fll/toram; then
+            mkdir /run/fll/toram/"${FLL_IMAGE_DIR}"
+            if fll_toram "${FLL_ISOMEDIA_MNT}/${FLL_IMAGE_LOCATION}" /run/fll/toram/"${FLL_IMAGE_LOCATION}"; then
+                grep -qw "${FLL_ISOMEDIA_MNT}" /proc/mounts && umount -l "${FLL_ISOMEDIA_MNT}"
+                grep -qw "${FLL_BLOCKDEV_MNT}" /proc/mounts && umount -l "${FLL_BLOCKDEV_MNT}"
+                FLL_ISOMEDIA_MNT=/run/fll/toram
+            else
+                umount /run/fll/toram
+                rmdir /run/fll/toram
+            fi
+        else
+            rmdir /run/fll/toram
+        fi
+    fi
+
+    FLL_READONLY_FILE="${FLL_ISOMEDIA_MNT}/${FLL_IMAGE_LOCATION}"
+    FLL_READONLY_FSTYPE="$(blkid -s TYPE -o value ${FLL_READONLY_FILE})"
+elif [ "${ID_FS_UUID}" = "${FLL_ROOTFS_UUID}" ]; then
+    FLL_READONLY_MNT="/run/fll/${FLL_ROOTFS_UUID}"
+    FLL_READONLY_FILE="${DEVNAME}"
+    FLL_READONLY_FSTYPE="${ID_FS_TYPE}"
+
+    # toram support
+    if [ "${FLL_COPY_TORAM}" = "yes" ]; then
+        mkdir -p /run/fll/toram
+        if mount -n -t tmpfs -o size=90% tmpfs /run/fll/toram; then
+            mkdir /run/fll/toram/"${FLL_IMAGE_DIR}"
+            if fll_toram "${FLL_READONLY_FILE}" /run/fll/toram/"${FLL_IMAGE_LOCATION}"; then
+                FLL_READONLY_FILE=/run/fll/toram/"${FLL_IMAGE_LOCATION}"
+            else
+                umount /run/fll/toram
+                rmdir /run/fll/toram
+            fi
+        else
+            rmdir /run/fll/toram
+        fi
+    fi
+else
+    exit 1
+fi
+
+# mount readonly rootfs
+mkdir -p "${FLL_READONLY_MNT}"
+if ! mount -t "${FLL_READONLY_FSTYPE}" -o ro "${FLL_READONLY_FILE}" "${FLL_READONLY_MNT}"; then
+    exit 1
+fi
+
+FLL_UNION_COWDIR="/run/fll/cow"
+FLL_PERSIST_MNT="/run/fll/persist"
+FLL_PERSIST_DEV=""
+mkdir -p "${FLL_UNION_COWDIR}"
+# prepare COW/overlay union filesystem
+if [ -n "${FLL_PERSIST_UUID}" ] && [ -n "${FLL_ROOTFS_UUID}" ]; then
+    if [ -n "${FLL_PERSIST_LUKS_UUID}" ]; then
+        # encrypted persist: prompt for passphrase via Plymouth or console.
+        # dracut hook stdin is not a tty so cryptsetup must be fed explicitly.
+        FLL_PERSIST_LUKS_DEV="/dev/disk/by-uuid/${FLL_PERSIST_LUKS_UUID}"
+        if [ -n "${FLL_PLYMOUTH}" ]; then
+            for attempt in 1 2 3; do
+                plymouth ask-for-password \
+                    --prompt="Enter passphrase for persist LUKS (UUID=${FLL_PERSIST_LUKS_UUID}) [attempt ${attempt}/3]" \
+                    | cryptsetup luksOpen --key-file=- "${FLL_PERSIST_LUKS_DEV}" fll-persist \
+                    && break
+            done
+        else
+            cryptsetup luksOpen --tries=3 "${FLL_PERSIST_LUKS_DEV}" fll-persist < /dev/console
+        fi
+        if [ $? -ne 0 ]; then
+            echo "fll: error: could not unlock LUKS container (UUID=${FLL_PERSIST_LUKS_UUID})" >&2
+            exit 1
+        fi
+        FLL_PERSIST_DEV="/dev/mapper/fll-persist"
+    else
+        FLL_PERSIST_DEV="/dev/disk/by-uuid/${FLL_PERSIST_UUID}"
+    fi
+    mkdir -p "${FLL_PERSIST_MNT}"
+    if ! mount -n -o rw,noatime,subvolid=5 -t btrfs \
+               "${FLL_PERSIST_DEV}" "${FLL_PERSIST_MNT}"; then
+        echo "fll: error: could not mount persist btrfs (UUID=${FLL_PERSIST_UUID})" >&2
+        exit 1
+    fi
+    # @root is the COW subvolume. Create the uuid-specific upper/work dirs
+    # on first boot (or after an upgrade reset).
+    FLL_UNION_COWDIR="${FLL_PERSIST_MNT}/@root/${FLL_ROOTFS_UUID}"
+    mkdir -p "${FLL_UNION_COWDIR}/upper" "${FLL_UNION_COWDIR}/work"
+else
+    if ! mount -n -t tmpfs -o size=90%,mode=755 tmpfs "${FLL_UNION_COWDIR}"; then
+        exit 1
+    fi
+fi
+
+FLL_UNION_OPTIONS="lowerdir=${FLL_READONLY_MNT},upperdir=${FLL_UNION_COWDIR}/upper,workdir=${FLL_UNION_COWDIR}/work,noatime"
+modprobe overlay
+mkdir -p "${FLL_UNION_COWDIR}/upper" "${FLL_UNION_COWDIR}/work"
+if ! mount -t overlay -o "${FLL_UNION_OPTIONS}" overlay "${FLL_ROOTFS_MNT}"; then
+    exit 1
+fi
+
+# Bind @home over the overlay's /home (persistent home).
+if [ -n "${FLL_PERSIST_UUID}" ] && [ -n "${FLL_ROOTFS_UUID}" ]; then
+    mkdir -p "${FLL_ROOTFS_MNT}/home"
+    if ! mount -n --bind "${FLL_PERSIST_MNT}/@home" "${FLL_ROOTFS_MNT}/home"; then
+        echo "fll: error: could not bind-mount @home subvolume" >&2
+        exit 1
+    fi
+fi
+
+# systemd-homed loopback-luks home is inferred from homectl being present in
+# the rootfs. homed's key dir persists in the persist volume's @root COW (the
+# per-rootfs upperdir), so the signing keypair survives reboots of the same
+# rootfs. fll_homectl also saves the keypair beside the home image on the shared
+# @home subvolume; seed the key dir from there when this rootfs has no keys yet,
+# so a different rootfs (e.g. an upgraded iso) booted against the same @home
+# shares the same homed user and home. This must happen HERE, before homed runs:
+# homed loads its keys only once, at service start, and fll_homectl is ordered
+# After=systemd-homed.service, so seeding from there would be too late -- homed
+# would already have started without the key and could neither verify nor
+# re-sign the home record, failing the greeter login.
+if [ -x "${FLL_ROOTFS_MNT}/usr/bin/homectl" ] && \
+   [ -n "${FLL_PERSIST_UUID}" ] && [ -z "${FLL_PERSIST_LUKS_UUID}" ]; then
+    FLL_HOMED_KEYDIR="${FLL_ROOTFS_MNT}/var/lib/systemd/home"
+    mkdir -p "${FLL_HOMED_KEYDIR}"
+    # @home is bind-mounted at ${FLL_ROOTFS_MNT}/home above; the keypair was
+    # saved there as <user>.home.public / <user>.home.private.
+    for keytype in public private; do
+        FLL_SAVED_KEY="${FLL_ROOTFS_MNT}/home/${FLL_LIVE_USER}.home.${keytype}"
+        FLL_LIVE_KEY="${FLL_HOMED_KEYDIR}/local.${keytype}"
+        [ -f "${FLL_SAVED_KEY}" ] && [ ! -f "${FLL_LIVE_KEY}" ] || continue
+        cp "${FLL_SAVED_KEY}" "${FLL_LIVE_KEY}"
+        [ "${keytype}" = "private" ] && chmod 0600 "${FLL_LIVE_KEY}"
+    done
+fi
+
+# create symlink to readonly rootfs for calamares
+ln -sf "${FLL_READONLY_FILE}" "/run/fll/${FLL_READONLY_FSTYPE}"
+
+# update calamares by setting readonly_fstype, initramfs_tool and bootloader
+if [ -d "${FLL_ROOTFS_MNT}/etc/calamares" ]; then
+    # readonly_fstype
+    sed -i "s/FLL_READONLY_FSTYPE/${FLL_READONLY_FSTYPE}/" \
+        "${FLL_ROOTFS_MNT}/etc/calamares/modules/unpackfs"*
+    # initramfs_tool
+    if [ -z "${NEWROOT}" ]; then
+        # not dracut -> initramfs-tools
+        sed -i -e "s/dracutlukscfg/initramfscfg/" -e "s/dracut/initramfs/" \
+            "${FLL_ROOTFS_MNT}/etc/calamares/settings.conf"
+    fi
+    # bootloader defaults to grub
+    if [ -d "${FLL_ROOTFS_MNT}/usr/lib/systemd/boot/efi" ]; then
+        # not grub -> systemd-boot
+        sed -i "s/^efiBootLoader: \"grub\"/efiBootLoader: \"systemd-boot\"/" \
+            "${FLL_ROOTFS_MNT}/etc/calamares/modules/bootloader.conf"
+    elif [ -d "${FLL_ROOTFS_MNT}/usr/share/refind" ]; then
+        # not grub -> refind
+        sed -i "s/^efiBootLoader: \"grub\"/efiBootLoader: \"refind\"/" \
+            "${FLL_ROOTFS_MNT}/etc/calamares/modules/bootloader.conf"
+    fi
+fi
+
+# prepare /dev /media /proc and /sys
+for dir in dev media proc run sys; do
+    mkdir -p -m 0755 "${FLL_ROOTFS_MNT}/${dir}"
+done
+
+# tmp with correct permissions for users
+mkdir -p -m 1777 "${FLL_ROOTFS_MNT}/tmp"
+
+# keep the systemd journal in RAM for the live session
+mkdir -p "${FLL_ROOTFS_MNT}/etc/systemd/journald.conf.d"
+printf "[Journal]\nStorage=volatile\n" \
+    > "${FLL_ROOTFS_MNT}/etc/systemd/journald.conf.d/00-fll-live.conf"
+
+# create udev rule for persistent symlink to device live media was found on
+printf "KERNEL==\"%s\", SYMLINK+=\"fll\"\n" \
+    "${DEVNAME#/dev/}" >  "${FLL_ROOTFS_MNT}"/etc/udev/rules.d/70-fll-live.rules
+# don't prompt for ejecting in a virtual machine
+if systemd-detect-virt --quiet; then
+    : > /run/fll/fll.noeject
+fi
+# create /dev/fll-cdrom if not virtualised and noeject cheatcode unused
+if [ ! -f /run/fll/fll.noeject ]; then
+    printf "KERNEL==\"%s\", ENV{ID_CDROM}==\"?*\", SYMLINK+=\"fll-cdrom\"\n" \
+        "${DEVNAME#/dev/}" >> "${FLL_ROOTFS_MNT}"/etc/udev/rules.d/70-fll-live.rules
+fi
+
+# Patch /etc/default/distro for custom username
+sed -i "s#^FLL_LIVE_USER=.*#FLL_LIVE_USER=\"${FLL_LIVE_USER}\"#" \
+    "${FLL_ROOTFS_MNT}/etc/default/distro"
+
+# custom hostname given on cmdline
+if [ -n "${FLL_CUSTOM_HOSTNAME}" ]; then
+    echo "${FLL_CUSTOM_HOSTNAME}" > "${FLL_ROOTFS_MNT}/etc/hostname"
+    echo "${FLL_CUSTOM_HOSTNAME}" > "${FLL_ROOTFS_MNT}/etc/mailname"
+    # update /etc/hosts
+    sed -i '/localhost/!s/^\(127.0.0.1[ \t]\+\)\(.\+\)$/\1'"${FLL_CUSTOM_HOSTNAME}"'/' \
+        "${FLL_ROOTFS_MNT}/etc/hosts"
+fi
+
+# configure timezone, fallback to UTC
+if [ -z "${FLL_CUSTOM_TZ}" ]; then
+    # no TZ specified by owner
+    FLL_CUSTOM_TZ="Etc/UTC"
+    # configure calamares geoip timezone lookup
+    if ! grep -q '^geoip:' "${FLL_ROOTFS_MNT}/etc/calamares/modules/locale.conf" 2>/dev/null; then
+        mkdir -p "${FLL_ROOTFS_MNT}/etc/calamares/modules"
+        cat >>"${FLL_ROOTFS_MNT}/etc/calamares/modules/locale.conf" <<EOF
+# added by fll.initramfs: no timezone was selected at boot time
+geoip:
+    style:    "xml"
+    url:      "https://geoip.kde.org/v1/ubiquity"
+    selector: "TimeZone"
+EOF
+        sed -i 's/^useSystemTimezone: true/useSystemTimezone: false/' \
+            "${FLL_ROOTFS_MNT}/etc/calamares/modules/locale.conf"
+    fi
+fi
+case "${FLL_CUSTOM_TZ}" in
+    utc|UTC)
+        FLL_CUSTOM_TZ="Etc/UTC"
+        ;;
+    *)
+        if [ ! -f "${FLL_ROOTFS_MNT}/usr/share/zoneinfo/${FLL_CUSTOM_TZ}" ]; then
+            FLL_CUSTOM_TZ="Etc/UTC"
+        fi
+        ;;
+esac
+printf "${FLL_CUSTOM_TZ}\n" > "${FLL_ROOTFS_MNT}/etc/timezone"
+rm -f "${FLL_ROOTFS_MNT}/etc/localtime"
+ln -sf "/usr/share/zoneinfo/${FLL_CUSTOM_TZ}" "${FLL_ROOTFS_MNT}/etc/localtime"
+
+# make localtime default, unless tz=Etc/UTC or utc=yes
+if [ "${FLL_CUSTOM_TZ}" = "Etc/UTC" ] || [ "${UTC}" = "yes" ]; then
+    printf "0.000000 0 0.000000\n0\nUTC\n" > "${FLL_ROOTFS_MNT}/etc/adjtime"
+else
+    # debian defaults to UTC=yes, which is rumored to be dual-boot unfriendly
+    printf "0.000000 0 0.000000\n0\nLOCAL\n" > "${FLL_ROOTFS_MNT}/etc/adjtime"
+fi
+
+# configure live getty configuration for systemd
+if [ -r "${FLL_ROOTFS_MNT}/lib/systemd/system/getty@.service" ]; then
+    sed -e 's#^ExecStart=.*#ExecStart=-/sbin/agetty --noclear -n -i -l /usr/bin/fll_login %I 38400 linux#' \
+        "${FLL_ROOTFS_MNT}/lib/systemd/system/getty@.service" > \
+        "${FLL_ROOTFS_MNT}/etc/systemd/system/getty@.service"
+    ln -fs /etc/systemd/system/getty@.service \
+        "${FLL_ROOTFS_MNT}/etc/systemd/system/getty.target.wants/getty@tty1.service"
+    ln -fs getty@.service "${FLL_ROOTFS_MNT}/etc/systemd/system/autovt@.service"
+fi
+
+if [ -r "${FLL_ROOTFS_MNT}/etc/${FLL_DISTRO_NAME}-version" ]; then
+    fll_say "Booting $(cat ${FLL_ROOTFS_MNT}/etc/${FLL_DISTRO_NAME}-version) ..."
+fi
+
+# success
+exit 0
