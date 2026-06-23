@@ -42,24 +42,20 @@ if [ "${HOMECTL_STORAGE}" = "luks" ]; then
 	HOMECTL_AUTOLOGIN="no"
 fi
 
-# Restore the stable signing keypair beside the home image. homed's key dir
-# lives on the volatile COW (only /home is persisted), so the keypair generated
-# on first boot is gone on every subsequent boot; without it homed could verify
-# the record but not re-sign it. That matters because login is not read-only:
-# activating a home updates it (auth counters/timestamps, LUKS rebalance) and
-# writes back a re-signed record. Missing the private key, that write fails and
-# the greeter login fails. So restore BOTH keys and let homed fully manage the
-# home. The private key cannot decrypt the LUKS home (sealed by the user's
-# password), so persisting it beside a plaintext-persist image only risks record
-# forgery, not exposure of the home's contents.
+# HOMED_KEY_DIR persists in the persist volume's @root COW, so the signing
+# keypair survives reboots of the same rootfs. We additionally save it beside
+# the home image (see the first-boot branch below); the initramfs seeds the key
+# dir from there when a freshly-booted rootfs has no keys yet, so chroots
+# sharing one @home share the same homed user. Seeding happens in the initramfs,
+# not here, because it must precede systemd-homed (which loads its keys only once
+# at startup, and this service is ordered After=systemd-homed.service). Without
+# the keypair homed can neither verify nor re-sign the home record, and login
+# fails: activating a home is not read-only (it updates auth counters/timestamps
+# and rebalances the LUKS image, then writes back a re-signed record). The
+# private key cannot decrypt the LUKS home (sealed by the user's password), so
+# persisting it in the clear only risks record forgery, not exposure of the
+# home's contents.
 mkdir -p "${HOMED_KEY_DIR}"
-if [ -f "${PUBKEY_SAVED}" ] && [ ! -f "${PUBKEY}" ]; then
-	cp "${PUBKEY_SAVED}" "${PUBKEY}"
-fi
-if [ -f "${PRIVKEY_SAVED}" ] && [ ! -f "${PRIVKEY}" ]; then
-	cp "${PRIVKEY_SAVED}" "${PRIVKEY}"
-	chmod 0600 "${PRIVKEY}"
-fi
 
 HOMECTL_STATE="absent"
 HOMECTL=$(homectl list -EE | jq '.[] | select(.name=="'${FLL_LIVE_USER}'")')

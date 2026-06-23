@@ -6,11 +6,12 @@ fll-live-initscripts (20260623.1) UNRELEASED; urgency=medium
   * fll_desktop, fll_home: adapt to the case where a systemd-homed enabled
     user must login interactively.
   * fll_homectl: persist the signing keypair (not just the public key) beside
-    the home image and restore both on subsequent boots. homed's key dir is on
-    the volatile COW, so the private key was lost on reboot, leaving homed able
-    to verify but not re-sign the record; login then failed at the greeter
-    because activating a home updates and re-signs it. Stop discarding the
-    private key.
+    the home image, and stop discarding the private key. homed's key dir is on
+    the volatile COW, so without the private key homed could verify but not
+    re-sign the record on later boots; login then failed at the greeter because
+    activating a home updates and re-signs it. The keypair is restored into the
+    key dir by fll-live-initramfs before systemd-homed starts (homed loads its
+    keys only once, at startup).
   * fll_homectl: do not eagerly activate a luks home on first boot. It cannot
     be auto-logged-in, so activating only added a redundant password prompt
     before the greeter unlock.
