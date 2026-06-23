@@ -1,3 +1,10 @@
+fll-live-boot (20260623.2) unstable; urgency=medium
+
+  * restrict dh_fixperms override for arch-indep (fails for --binary-arch
+    builds).
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Tue, 23 Jun 2026 20:32:31 +0200
+
 fll-live-boot (20260623.1) unstable; urgency=medium
 
   * Merge the fll-live-initramfs and fll-live-initscripts source packages into
