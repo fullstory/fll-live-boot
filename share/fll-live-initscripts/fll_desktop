@@ -5,14 +5,16 @@ setup_displaymanager() {
 		gdm3)
 			# autologin + greeter theme
 			# timed login required for login after x restart
-			sed -i	-e "/^AutomaticLogin\=.*/d" \
-				-e "/^AutomaticLoginEnable\=.*/d" \
-				-e "/^TimedLoginEnable\=.*/d" \
-				-e "/^TimedLogin\=.*/d" \
-				-e "/^TimedLoginDelay\=.*/d" \
-				-e "s/^\(\[daemon\]$\)/\1\nAutomaticLogin\=${FLL_LIVE_USER}\nAutomaticLoginEnable\=true\n \
-					\nTimedLoginEnable\=true\nTimedLogin\=${FLL_LIVE_USER}\nTimedLoginDelay\=1/" \
-					/etc/gdm3/daemon.conf
+			if [ "${FLL_AUTOLOGIN}" = "yes" ]; then
+				sed -i	-e "/^AutomaticLogin\=.*/d" \
+					-e "/^AutomaticLoginEnable\=.*/d" \
+					-e "/^TimedLoginEnable\=.*/d" \
+					-e "/^TimedLogin\=.*/d" \
+					-e "/^TimedLoginDelay\=.*/d" \
+					-e "s/^\(\[daemon\]$\)/\1\nAutomaticLogin\=${FLL_LIVE_USER}\nAutomaticLoginEnable\=true\n \
+						\nTimedLoginEnable\=true\nTimedLogin\=${FLL_LIVE_USER}\nTimedLoginDelay\=1/" \
+						/etc/gdm3/daemon.conf
+			fi
 
 			if [ "${FLL_XTYPE}" = "x11" ]; then
 				sed -i "s/#WaylandEnable=false/WaylandEnable=false/" /etc/gdm3/daemon.conf
@@ -28,18 +30,20 @@ EOF
 			# set autologin user and set timeout to zero
 			mkdir -p /etc/lightdm/lightdm.conf.d
 			if [ ! -e "/etc/lightdm/lightdm.conf.d/80_${FLL_LIVE_USER}.conf" ]; then
-				cat >"/etc/lightdm/lightdm.conf.d/80_${FLL_LIVE_USER}.conf" <<EOF
-[SeatDefaults]
-greeter-hide-users=false
-autologin-user=${FLL_LIVE_USER}
-autologin-user-timeout=0
-autologin-session=${FLL_XSESSION}
-EOF
+				{
+					printf "[SeatDefaults]\ngreeter-hide-users=false\n"
+					if [ "${FLL_AUTOLOGIN}" = "yes" ]; then
+						printf "autologin-user=%s\nautologin-user-timeout=0\n" \
+							"${FLL_LIVE_USER}"
+					fi
+					printf "autologin-session=%s\n" "${FLL_XSESSION}"
+				} >"/etc/lightdm/lightdm.conf.d/80_${FLL_LIVE_USER}.conf"
 			fi
 			;;
 		lxdm)
 			# set autologin user
-			if [ -L /etc/lxdm/default.conf ] && [ ! -e "/etc/lxdm/${FLL_LIVE_USER}.conf" ]; then
+			if [ "${FLL_AUTOLOGIN}" = "yes" ] && \
+				[ -L /etc/lxdm/default.conf ] && [ ! -e "/etc/lxdm/${FLL_LIVE_USER}.conf" ]; then
 				rm -f /etc/lxdm/default.conf
 				sed "s/^# autologin=.*/&\nautologin=${FLL_LIVE_USER}/" \
 					"${1}/etc/lxdm/lxdm.conf" > "/etc/lxdm/${FLL_LIVE_USER}.conf"
@@ -48,10 +52,16 @@ EOF
 			;;
 		sddm)
 			mkdir -p /etc/sddm.conf.d
-			printf "\n[Autologin]\nUser=${FLL_LIVE_USER}\nSession=${FLL_XSESSION}\n" \
-				>>"/etc/sddm.conf.d/${FLL_LIVE_USER}.conf"
-			[ -z "${HOMECTL}" ] && printf "Relogin=true\n" \
-				>>"/etc/sddm.conf.d/${FLL_LIVE_USER}.conf"
+			if [ "${FLL_AUTOLOGIN}" = "yes" ]; then
+				printf "\n[Autologin]\nUser=${FLL_LIVE_USER}\nSession=${FLL_XSESSION}\nRelogin=true\n" \
+					>>"/etc/sddm.conf.d/${FLL_LIVE_USER}.conf"
+			else
+				# encrypted homed home: no autologin; the greeter prompts for the
+				# password, which pam_systemd_home uses to unlock the home. The
+				# session comes from the home record (--session-launcher). Touch
+				# the file so the DisplayServer setting below has a target.
+				: >"/etc/sddm.conf.d/${FLL_LIVE_USER}.conf"
+			fi
 
 			if [ "${FLL_XTYPE}" = "x11" ]; then
 				sed -i 's/^DisplayServer=.*/DisplayServer=x11/' /etc/sddm.conf.d/*.conf
@@ -59,15 +69,17 @@ EOF
 			;;
 			slim)
 			# set autologin for $FLL_LIVE_USER to yes
-			sed -i	-e "s/^default_user.*/\#FLL\#&/" \
-				-e "s/^\#FLL\#\(default_user[ \t]*${FLL_LIVE_USER}$\)/\1/" \
-				-e "s/^auto_login.*/\#FLL\#&/" \
-				-e "s/^\#FLL\#\(auto_login[ \t]*yes$\)/\1/" \
-					/etc/slim.conf
-			grep -q ^default_user /etc/slim.conf || \
-				printf "default_user\t${FLL_LIVE_USER}\n" >> /etc/slim.conf
-			grep -q ^auto_login /etc/slim.conf || \
-				printf "auto_login\tyes\n" >> /etc/slim.conf
+			if [ "${FLL_AUTOLOGIN}" = "yes" ]; then
+				sed -i	-e "s/^default_user.*/\#FLL\#&/" \
+					-e "s/^\#FLL\#\(default_user[ \t]*${FLL_LIVE_USER}$\)/\1/" \
+					-e "s/^auto_login.*/\#FLL\#&/" \
+					-e "s/^\#FLL\#\(auto_login[ \t]*yes$\)/\1/" \
+						/etc/slim.conf
+				grep -q ^default_user /etc/slim.conf || \
+					printf "default_user\t${FLL_LIVE_USER}\n" >> /etc/slim.conf
+				grep -q ^auto_login /etc/slim.conf || \
+					printf "auto_login\tyes\n" >> /etc/slim.conf
+			fi
 		;;
 		greetd)
 			if [ "${FLL_XSESSION}" = "hyprland" ]; then
@@ -125,12 +137,16 @@ EOF
 				sed -i "s#^command = ".*"#command = \"${GREETER_CMD}\"#" \
 					/etc/greetd/config.toml
 
-				cat >> /etc/greetd/config.toml <<EOF
+				# [initial_session] is greetd's autologin; omit it for an
+				# encrypted homed home so the greeter prompts to unlock.
+				if [ "${FLL_AUTOLOGIN}" = "yes" ]; then
+					cat >> /etc/greetd/config.toml <<EOF
 
 [initial_session]
 command = "${EXECUTE_CMD}"
 user = "${FLL_LIVE_USER}"
 EOF
+				fi
 			fi
 			;;
 	esac

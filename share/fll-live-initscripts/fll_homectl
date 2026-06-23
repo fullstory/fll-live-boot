@@ -32,8 +32,13 @@ else
 fi
 
 STORAGE_ARGS="--storage=${HOMECTL_STORAGE}"
+HOMECTL_AUTOLOGIN="yes"
 if [ "${HOMECTL_STORAGE}" = "luks" ]; then
 	STORAGE_ARGS="${STORAGE_ARGS} --image-path=${HOME_IMAGE}"
+	# An encrypted home cannot be auto-logged-in (it needs the password to
+	# unlock); the user logs in at the display-manager greeter, which unlocks
+	# it. Reflect that in the record so homed-aware greeters do not attempt it.
+	HOMECTL_AUTOLOGIN="no"
 fi
 
 # Restore the stable public key so an existing signed record verifies.
@@ -52,11 +57,11 @@ case "${HOMECTL_STATE}" in
 	fixating*|unfixated|inactive)
 		# A home for this user already exists and its record verifies against
 		# the restored public key. Do NOT update (that re-signs and needs the
-		# discarded private key). For an encrypted (luks) home, leave unlocking
-		# to the display-manager autologin via pam_systemd_home so the user is
-		# prompted for their password exactly once, at the greeter. A directory
-		# home has no unlock cost, so activate it eagerly in anticipation of
-		# autologin.
+		# discarded private key). For an encrypted (luks) home, leave it
+		# inactive: autologin is disabled (see fll_home/fll_desktop) and the
+		# user unlocks it at the display-manager greeter, where pam_systemd_home
+		# prompts for their password exactly once. A directory home has no
+		# unlock cost, so activate it eagerly in anticipation of autologin.
 		if [ "${HOMECTL_STORAGE}" != "luks" ]; then
 			homectl activate "${FLL_LIVE_USER}"
 		fi
@@ -70,7 +75,7 @@ case "${HOMECTL_STATE}" in
 				--member-of="${FLL_LIVE_USER_GROUPS}" \
 				--session-launcher="${FLL_XSESSION}" \
 				--session-type="${FLL_XTYPE}" \
-				--auto-login=yes \
+				--auto-login="${HOMECTL_AUTOLOGIN}" \
 				${STORAGE_ARGS}
 		if [ "$?" = "0" ]; then
 			# Persist only the non-secret public key, beside the home image, for

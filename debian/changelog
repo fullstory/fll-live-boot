@@ -1,11 +1,10 @@
 fll-live-initscripts (20260623.1) UNRELEASED; urgency=medium
 
-  [ Stefan Lippers-Hollmann ]
-  * NOT RELEASED YET
-
   [ Kel Modderman ]
   * fll_homectl: adapt to persistent (non-encryoted) @home and seed a luks
     image file.
+  * fll_desktop, fll_home: adapt to the case where a systemd-homed enabled
+    user must login interactively.
 
  -- Kel Modderman <kelvmod@gmail.com>  Tue, 23 Jun 2026 12:21:11 +1000
 
