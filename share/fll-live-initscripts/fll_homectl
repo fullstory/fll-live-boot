@@ -20,6 +20,7 @@ PUBKEY="${HOMED_KEY_DIR}/local.public"
 PRIVKEY="${HOMED_KEY_DIR}/local.private"
 HOME_IMAGE="/home/${FLL_LIVE_USER}.home"
 PUBKEY_SAVED="/home/${FLL_LIVE_USER}.home.public"
+PRIVKEY_SAVED="/home/${FLL_LIVE_USER}.home.private"
 
 FLL_LIVE_USER_GROUPS=$(echo "${FLL_LIVE_USER_GROUPS}" | sed -e 's/\s/,/g')
 
@@ -41,10 +42,23 @@ if [ "${HOMECTL_STORAGE}" = "luks" ]; then
 	HOMECTL_AUTOLOGIN="no"
 fi
 
-# Restore the stable public key so an existing signed record verifies.
+# Restore the stable signing keypair beside the home image. homed's key dir
+# lives on the volatile COW (only /home is persisted), so the keypair generated
+# on first boot is gone on every subsequent boot; without it homed could verify
+# the record but not re-sign it. That matters because login is not read-only:
+# activating a home updates it (auth counters/timestamps, LUKS rebalance) and
+# writes back a re-signed record. Missing the private key, that write fails and
+# the greeter login fails. So restore BOTH keys and let homed fully manage the
+# home. The private key cannot decrypt the LUKS home (sealed by the user's
+# password), so persisting it beside a plaintext-persist image only risks record
+# forgery, not exposure of the home's contents.
 mkdir -p "${HOMED_KEY_DIR}"
 if [ -f "${PUBKEY_SAVED}" ] && [ ! -f "${PUBKEY}" ]; then
 	cp "${PUBKEY_SAVED}" "${PUBKEY}"
+fi
+if [ -f "${PRIVKEY_SAVED}" ] && [ ! -f "${PRIVKEY}" ]; then
+	cp "${PRIVKEY_SAVED}" "${PRIVKEY}"
+	chmod 0600 "${PRIVKEY}"
 fi
 
 HOMECTL_STATE="absent"
@@ -56,8 +70,8 @@ fi
 case "${HOMECTL_STATE}" in
 	fixating*|unfixated|inactive)
 		# A home for this user already exists and its record verifies against
-		# the restored public key. Do NOT update (that re-signs and needs the
-		# discarded private key). For an encrypted (luks) home, leave it
+		# the restored keypair. There is nothing to change, so don't update it
+		# (needless re-sign churn). For an encrypted (luks) home, leave it
 		# inactive: autologin is disabled (see fll_home/fll_desktop) and the
 		# user unlocks it at the display-manager greeter, where pam_systemd_home
 		# prompts for their password exactly once. A directory home has no
@@ -78,18 +92,23 @@ case "${HOMECTL_STATE}" in
 				--auto-login="${HOMECTL_AUTOLOGIN}" \
 				${STORAGE_ARGS}
 		if [ "$?" = "0" ]; then
-			# Persist only the non-secret public key, beside the home image, for
-			# future boots with a matching username=.
+			# Persist the keypair beside the home image so homed can re-sign and
+			# manage the home on future boots (see the restore block above).
 			if [ -f "${PUBKEY}" ]; then
 				cp "${PUBKEY}" "${PUBKEY_SAVED}"
 			fi
-			homectl activate "${FLL_LIVE_USER}"
-		fi
-		# Discard the private key immediately. On a plaintext persist the key
-		# dir is a tmpfs so it is gone on reboot regardless, but never leave it
-		# lying around within this boot.
-		if [ -f "${PRIVKEY}" ]; then
-			shred -u "${PRIVKEY}" 2>/dev/null || rm -f "${PRIVKEY}"
+			if [ -f "${PRIVKEY}" ]; then
+				cp "${PRIVKEY}" "${PRIVKEY_SAVED}"
+				chmod 0600 "${PRIVKEY_SAVED}"
+			fi
+			# A directory home is auto-logged-in, so activate it eagerly. A luks
+			# home cannot be auto-logged-in: activating now would prompt for the
+			# password a second time, only to have the user unlock it again at
+			# the greeter. Leave it inactive and let pam_systemd_home unlock it
+			# there, prompting exactly once.
+			if [ "${HOMECTL_STORAGE}" != "luks" ]; then
+				homectl activate "${FLL_LIVE_USER}"
+			fi
 		fi
 		;;
 esac
