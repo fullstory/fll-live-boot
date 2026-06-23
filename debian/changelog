@@ -1,0 +1,36 @@
+fll-live-boot (20260623.1) UNRELEASED; urgency=medium
+
+  * Merge the fll-live-initramfs and fll-live-initscripts source packages into
+    a single source package, fll-live-boot. The two were intrinsically coupled:
+    the fll-live-utils binary package (fll_blockdev_detect and fll_login) was
+    built by fll-live-initscripts but consumed only by fll-live-initramfs. The
+    same set of binary packages is still produced (distro-defaults,
+    fll-live-initramfs, fll-live-initscripts,
+    fll-live-initscripts-networkd-dummy and fll-live-utils), so installations
+    are unaffected.
+  * Source tree reorganised into initramfs/, initscripts/ and utils/ subtrees.
+  * fll-live-initramfs: depend on fll-live-utils explicitly. It bakes
+    fll_blockdev_detect into the generated initramfs and rewrites the live
+    getty to call fll_login, but previously relied on fll-live-initscripts to
+    pull fll-live-utils in.
+  * fll-live-initscripts: drop the dependency on fll-live-utils. None of its
+    own scripts use fll_blockdev_detect or fll_login; the dependency now lives
+    on fll-live-initramfs where those binaries are actually consumed.
+  * fll-live-utils: install fll_login and fll_blockdev_detect to
+    /usr/libexec/fll/ instead of /usr/bin; they are internal helpers, not user
+    commands. The live getty ExecStart in fll.initramfs is updated for
+    fll_login, and the initramfs-tools and dracut hooks are updated to copy
+    fll_blockdev_detect from its new location (it still lands at /usr/bin
+    inside the initramfs, where the boot scripts call it by name).
+  * Drop the fll_blockdev_detect and fll_login manpages, and with them the
+    asciidoc-base, docbook, docbook-xml, docbook-xsl, xsltproc and libxml2-utils
+    build dependencies. Both are internal helpers only ever run from the
+    initramfs.
+  * distro-defaults and fll-live-initscripts-networkd-dummy: make the
+    chrooted() build-environment guard nspawn-aware (matching the preinst), so
+    their postinst configuration also runs inside systemd-nspawn containers and
+    not just bind-mount chroots.
+  * Remove a stale "dh_installsystemd --name=fll-live" call from debian/rules;
+    that unit was purged long ago, leaving the call a no-op.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Tue, 23 Jun 2026 12:21:11 +1000

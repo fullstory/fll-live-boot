@@ -6,9 +6,18 @@ export DEB_BUILD_MAINT_OPTIONS = hardening=+all
 %:
 	dh ${@}
 
+override_dh_auto_test:
+	$(MAKE) test
+
+override_dh_fixperms:
+	dh_fixperms
+	chmod 0755 debian/fll-live-initramfs/usr/share/initramfs-tools/*/fll
+
+override_dh_installinitramfs:
+	dh_installinitramfs --no-scripts
+
 override_dh_installsystemd:
 	dh_installsystemd --package=fll-live-initscripts --no-start --name=fll-snakeoil-cert
-	dh_installsystemd --package=fll-live-initscripts --no-start --name=fll-live
 	dh_installsystemd --package=fll-live-initscripts --no-start --name=fll-home
 	dh_installsystemd --package=fll-live-initscripts --no-start --name=fll-locales
 	dh_installsystemd

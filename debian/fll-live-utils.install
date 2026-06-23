@@ -1,0 +1,2 @@
+utils/fll_blockdev_detect usr/libexec/fll
+utils/fll_login           usr/libexec/fll

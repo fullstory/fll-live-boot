@@ -415,7 +415,7 @@ fi
 
 # configure live getty configuration for systemd
 if [ -r "${FLL_ROOTFS_MNT}/lib/systemd/system/getty@.service" ]; then
-    sed -e 's#^ExecStart=.*#ExecStart=-/sbin/agetty --noclear -n -i -l /usr/bin/fll_login %I 38400 linux#' \
+    sed -e 's#^ExecStart=.*#ExecStart=-/sbin/agetty --noclear -n -i -l /usr/libexec/fll/fll_login %I 38400 linux#' \
         "${FLL_ROOTFS_MNT}/lib/systemd/system/getty@.service" > \
         "${FLL_ROOTFS_MNT}/etc/systemd/system/getty@.service"
     ln -fs /etc/systemd/system/getty@.service \

@@ -1,12 +1,40 @@
-# fll-live-initramfs
+# fll-live-boot
 
-Early userspace glue for booting [F.U.L.L.S.T.O.R.Y](https://github.com/fullstory)
-live media. Supports both **dracut** and **initramfs-tools** as initramfs generators.
+Boot-time glue for [F.U.L.L.S.T.O.R.Y](https://github.com/fullstory) live media —
+both the early userspace (initramfs) and the systemd boot sequence of the running
+live system. This is the merger of the formerly separate `fll-live-initramfs` and
+`fll-live-initscripts` source packages, which were intrinsically coupled (the
+`fll-live-utils` binaries were built by initscripts but consumed only by the
+initramfs).
 
-## Overview
+## Repository layout
 
-This package installs two scripts plus the generator-specific infrastructure needed
-to produce an initramfs that can boot live media:
+| Path | Contents |
+|------|----------|
+| `initramfs/` | initramfs payload: `fll.initramfs`, `fll.shutdown`, and the `initramfs-tools/` and `dracut/` generator integration |
+| `initscripts/` | running-system payload: systemd-helper scripts (`share/`), the polkit rule `90-fll.rules`, and the shutdown `/run` remount helper |
+| `utils/` | `fll_blockdev_detect` (C, baked into the initramfs) and `fll_login` (getty helper) |
+| `debian/` | packaging for all binary packages |
+
+## Binary packages
+
+One source, the same five binary packages as before:
+
+| Package | Arch | Contents |
+|---------|------|----------|
+| `fll-live-initramfs` | all | initramfs glue (`initramfs/`); depends on `fll-live-utils` |
+| `fll-live-initscripts` | all | systemd units and helper scripts (`initscripts/`) |
+| `fll-live-initscripts-networkd-dummy` | all | default `wired.network` (created in postinst) |
+| `fll-live-utils` | any | `fll_blockdev_detect` and `fll_login` (`/usr/libexec/fll`) |
+| `distro-defaults` | all | build-time generated distro defaults |
+
+---
+
+## Initramfs glue
+
+Supports both **dracut** and **initramfs-tools** as initramfs generators, installing
+two scripts plus the generator-specific infrastructure needed to produce an initramfs
+that can boot live media:
 
 | Script | Purpose |
 |--------|---------|

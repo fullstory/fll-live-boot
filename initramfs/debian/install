@@ -1,3 +1,0 @@
-fll.* usr/share/fll-live-initramfs
-initramfs-tools usr/share
-dracut usr/lib

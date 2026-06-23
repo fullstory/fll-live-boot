@@ -1,24 +1,19 @@
-Source: fll-live-initscripts
+Source: fll-live-boot
 Maintainer: Stefan Lippers-Hollmann <s.l-h@gmx.de>
-Uploaders: Kel Modderman <kelvmod@gmail.com>
+Uploaders: Kel Modderman <kelvmod@gmail.com>,
+ Niall Walsh <niallwalsh@celtux.org>
 Section: misc
 Priority: optional
 Rules-Requires-Root: no
 Build-Depends: debhelper-compat (= 13),
- asciidoc-base,
- docbook,
- gengetopt,
- xsltproc,
- docbook-xml,
- docbook-xsl,
  devscripts,
+ gengetopt,
  pkgconf,
  libblkid-dev,
- libudev-dev,
- libxml2-utils
+ libudev-dev
 Standards-Version: 4.7.0
-Vcs-Browser: https://github.com/fullstory/fll-live-initscripts
-Vcs-Git: https://github.com/fullstory/fll-live-initscripts.git
+Vcs-Browser: https://github.com/fullstory/fll-live-boot
+Vcs-Git: https://github.com/fullstory/fll-live-boot.git
 
 Package: distro-defaults
 Architecture: all
@@ -28,13 +23,30 @@ Description: set various default options
  behaviour of the fll live Linux utilities. It's configuration data is
  dynamically created at distro build time.
 
+Package: fll-live-initramfs
+Architecture: all
+Depends: ${misc:Depends},
+ cryptsetup-bin,
+ distro-defaults,
+ dracut | initramfs-tools,
+ fll-live-utils,
+ procps,
+ eject
+Recommends: busybox
+Description: fll live media initramfs glue
+ This package provides the script glue that allows initramfs-tools or
+ dracut to generate an early userspace filesystem suitable for booting
+ the live media of the F.U.L.L.S.T.O.R.Y project.
+ .
+ This is a FULLSTORY live-only package and must not be installed to an
+ ordinary system.
+
 Package: fll-live-initscripts
 Architecture: all
 Depends: ${misc:Depends},
  systemd-homed | adduser,
  console-setup,
  distro-defaults,
- fll-live-utils,
  login,
  keyboard-configuration,
  jq

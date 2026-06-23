@@ -1,18 +1,32 @@
 Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
-Upstream-Name: fll-live-initscripts
+Upstream-Name: fll-live-boot
 Upstream-Contact: Stefan Lippers-Hollmann <s.l-h@gmx.de>
-Source: https://github.com/fullstory/fll-live-initscripts.git
+Source: https://github.com/fullstory/fll-live-boot.git
+Comment:
+ fll-live-boot is the merger of the formerly separate fll-live-initramfs and
+ fll-live-initscripts source packages.
 
 Files: *
 Copyright: 2007-2024, Kel Modderman <kelvmod@gmail.com>
-           2007-2024, Stefan Lippers-Hollmann <s.l-h@gmx.net>
+           2007-2024, Stefan Lippers-Hollmann <s.l-h@gmx.de>
            2008-2016, Niall Walsh <niallwalsh@users.berlios.de>
 License: GPL-2.0
 Comment:
  Some code and concepts derived from initscripts-sidux-live.
  Copyright: Klaus Knopper <knopper@knopper.net>
-            Jörg Schirottke <master@kanotix.com>
+            Joerg Schirottke <master@kanotix.com>
             Stefan Lippers-Hollmann <s.l-h@gmx.net>
+ .
+ Some parts of the initramfs scripts are derived from the KNOPPIX/KANOTIX
+ linuxrc contained in live-initrd-sidux.
+ Copyright: Klaus Knopper <knoppix@knopper.net>
+            2003-2006, Joerg Schirottke <master@kanotix.com>
+            2006, Stefan Lippers-Hollmann <s.l-h@gmx.de>
+ .
+ Some code and ideas taken from the debian-live and ubuntu project; casper.
+ Copyright: 2006, Marco Amadori <marco.amadori@gmail.com>
+            2005-2006, Canonical Ltd. <http://www.canonical.com/>
+ https://deb.debian.org/debian/pool/main/c/casper/
 
 License: GPL-2.0
  This package is free software; you can redistribute it and/or modify
