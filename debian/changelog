@@ -1,3 +1,9 @@
+fll-live-boot (20260623.3) UNRELEASED; urgency=medium
+
+  * NOT RELEASED YET
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Tue, 23 Jun 2026 20:32:41 +0200
+
 fll-live-boot (20260623.2) unstable; urgency=medium
 
   * restrict dh_fixperms override for arch-indep (fails for --binary-arch
