@@ -1,5 +1,47 @@
 #!/bin/sh
 
+# systemd-homed live user provisioning.
+#
+# The presence of homectl in the live rootfs (it ships only in the
+# systemd-homed package, installed when 'homed' is set at build time) selects
+# this handler over fll_adduser. The home is seeded on first boot with the end
+# user's own credentials, prompted through the systemd password agent (served
+# by Plymouth while the splash is up, or the console otherwise).
+#
+# Storage is chosen from the runtime persist state:
+#   plaintext persist  -> luks loopback image on @home (gives the home its own
+#                         encryption layer, which @home itself lacks)
+#   encrypted persist  -> directory on the already-encrypted @home (avoids a
+#                         wasteful LUKS-in-LUKS double layer)
+#   no persist         -> directory in the volatile COW (ephemeral live home)
+
+HOMED_KEY_DIR=/var/lib/systemd/home
+PUBKEY="${HOMED_KEY_DIR}/local.public"
+PRIVKEY="${HOMED_KEY_DIR}/local.private"
+HOME_IMAGE="/home/${FLL_LIVE_USER}.home"
+PUBKEY_SAVED="/home/${FLL_LIVE_USER}.home.public"
+
+FLL_LIVE_USER_GROUPS=$(echo "${FLL_LIVE_USER_GROUPS}" | sed -e 's/\s/,/g')
+
+# The initramfs bind-mounts the persistent @home over /home, and names the LUKS
+# mapper 'fll-persist' when the persist partition is encrypted.
+if mountpoint -q /home && [ ! -e /dev/mapper/fll-persist ]; then
+	HOMECTL_STORAGE="luks"
+else
+	HOMECTL_STORAGE="directory"
+fi
+
+STORAGE_ARGS="--storage=${HOMECTL_STORAGE}"
+if [ "${HOMECTL_STORAGE}" = "luks" ]; then
+	STORAGE_ARGS="${STORAGE_ARGS} --image-path=${HOME_IMAGE}"
+fi
+
+# Restore the stable public key so an existing signed record verifies.
+mkdir -p "${HOMED_KEY_DIR}"
+if [ -f "${PUBKEY_SAVED}" ] && [ ! -f "${PUBKEY}" ]; then
+	cp "${PUBKEY_SAVED}" "${PUBKEY}"
+fi
+
 HOMECTL_STATE="absent"
 HOMECTL=$(homectl list -EE | jq '.[] | select(.name=="'${FLL_LIVE_USER}'")')
 if [ -n "${HOMECTL}" ]; then
@@ -8,28 +50,41 @@ fi
 
 case "${HOMECTL_STATE}" in
 	fixating*|unfixated|inactive)
-		FLL_LIVE_USER_GROUPS=$(echo "${FLL_LIVE_USER_GROUPS}" | sed -e 's/\s/,/g')
-		# A home matching installed systemd-homed keys is present but may not
-		# have been blessed by the system yet (unfixated). Activate discovered
-		# homes in anticipation of autologin into the live desktop environment.
-		homectl activate "${FLL_LIVE_USER}"
-		if [ "$?" = "0" ]; then
-			homectl update "${FLL_LIVE_USER}" \
-				--member-of="${FLL_LIVE_USER_GROUPS}" \
-				--session-launcher="${FLL_XSESSION}" \
-				--session-type="${FLL_XTYPE}" \
-				--auto-login=yes
+		# A home for this user already exists and its record verifies against
+		# the restored public key. Do NOT update (that re-signs and needs the
+		# discarded private key). For an encrypted (luks) home, leave unlocking
+		# to the display-manager autologin via pam_systemd_home so the user is
+		# prompted for their password exactly once, at the greeter. A directory
+		# home has no unlock cost, so activate it eagerly in anticipation of
+		# autologin.
+		if [ "${HOMECTL_STORAGE}" != "luks" ]; then
+			homectl activate "${FLL_LIVE_USER}"
 		fi
 		;;
 	absent|*)
-		FLL_LIVE_USER_GROUPS=$(echo "${FLL_LIVE_USER_GROUPS}" | sed -e 's/\s/,/g')
+		# First boot: no home yet. homectl auto-generates a signing keypair
+		# into the key dir, signs the record once, and embeds it in the home.
+		# The password is prompted via the systemd password agent (Plymouth).
 		homectl create "${FLL_LIVE_USER}" \
 				--real-name="${FLL_LIVE_USER}" \
 				--member-of="${FLL_LIVE_USER_GROUPS}" \
 				--session-launcher="${FLL_XSESSION}" \
 				--session-type="${FLL_XTYPE}" \
 				--auto-login=yes \
-				--storage=directory
-		homectl activate "${FLL_LIVE_USER}"
+				${STORAGE_ARGS}
+		if [ "$?" = "0" ]; then
+			# Persist only the non-secret public key, beside the home image, for
+			# future boots with a matching username=.
+			if [ -f "${PUBKEY}" ]; then
+				cp "${PUBKEY}" "${PUBKEY_SAVED}"
+			fi
+			homectl activate "${FLL_LIVE_USER}"
+		fi
+		# Discard the private key immediately. On a plaintext persist the key
+		# dir is a tmpfs so it is gone on reboot regardless, but never leave it
+		# lying around within this boot.
+		if [ -f "${PRIVKEY}" ]; then
+			shred -u "${PRIVKEY}" 2>/dev/null || rm -f "${PRIVKEY}"
+		fi
 		;;
 esac
