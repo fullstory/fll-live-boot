@@ -1,0 +1,2 @@
+bin/fll_blockdev_detect usr/bin
+bin/fll_login           usr/bin

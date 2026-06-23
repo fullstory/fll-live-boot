@@ -1,0 +1,60 @@
+#!/bin/sh
+
+[ -s /etc/default/distro ] && . /etc/default/distro
+
+case "${lang}" in
+	cs_*) p="Stiskněte prosím Enter pro aktivaci této konzole." ;;
+	da_*) p="For at aktivere denne konsol, tast venligst retur." ;;
+	de_*) p="Bitte drücken Sie die Eingabetaste, um diese Konsole zu aktivieren." ;;
+	es_*) p="Por favor, pulse Intro para activar esta consola." ;;
+	it_*) p="Premere Invio per attivare questo terminale." ;;
+	ja_*) p="このコンソールをアクティブにするためEnterを押してください" ;;
+	nl_*) p="Druk op Enter om deze console te activeren." ;;
+	pl_*) p="Naciśnij Enter aby aktywować tę konsolę." ;;
+	pt_*) p="Por favor, pressione a tecla Enter para activar esta consola." ;;
+	ro_*) p="Vă rog, apăsți tasta Enter pentru a activa această consolă." ;;
+	ru_*) p="Нажмите Enter, чтобы активировать эту консоль." ;;
+	*)    p="Please press Enter to activate this console." ;;
+esac
+
+# Let user know this shell is no longer activatable when fll_login exits
+trap "echo ; echo ${0##*/} Terminated ; exit" TERM
+
+printf "${p} "
+read nothing
+
+# There will be a password (or equivalent factor) for a user with an active or
+# inactive (but blessed by system) home. Fallback to passwordless login.
+if [ -x "$(which homectl)" ]; then
+	HOMECTL_STATE="absent"
+	HOMECTL=$(homectl list -EE | jq '.[] | select(.name=="'${FLL_LIVE_USER}'")')
+	if [ -n "${HOMECTL}" ]; then
+		HOMECTL_STATE=$(echo "${HOMECTL}" | jq -r '.state')
+	fi
+	case "${HOMECTL_STATE}" in
+		active|inactive)
+			# Blessed home: prompt for the user's own password/factor.
+			exec /usr/bin/login "${FLL_LIVE_USER}"
+			;;
+		*)
+			# A homed build, but no usable home for this user: provisioning
+			# was declined or failed. The homed user does not exist in passwd
+			# and its home is not active, so the passwordless fallbacks below
+			# would otherwise hand out a forced root shell. Never do that on a
+			# homed build; fall back to an ordinary authenticated login prompt.
+			exec /usr/bin/login
+			;;
+	esac
+fi
+
+if getent passwd "${FLL_LIVE_USER}" >/dev/null 2>&1; then
+	FLL_LIVE_USER_HOME=$(getent passwd ${FLL_LIVE_USER} | cut -d\: -f 6)
+	if [ ! -e "${FLL_LIVE_USER_HOME}/.hushlogin" ]; then
+		:> 	"${FLL_LIVE_USER_HOME}/.hushlogin"
+		chown "${FLL_LIVE_USER}:${FLL_LIVE_USER}" \
+			"${FLL_LIVE_USER_HOME}/.hushlogin"
+	fi
+	exec /usr/bin/login -f "${FLL_LIVE_USER}"
+else
+	exec /usr/bin/login -f root
+fi

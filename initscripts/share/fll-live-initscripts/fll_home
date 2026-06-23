@@ -1,0 +1,31 @@
+#!/bin/sh
+
+# An encrypted systemd-homed home cannot be auto-logged-in: it needs the user's
+# password to unlock, supplied interactively at the display-manager greeter
+# (where pam_systemd_home unlocks the home). Every other case (no homed, or a
+# non-encrypted directory home) keeps the passwordless live autologin. This is
+# decided here because fll_desktop, sourced next, configures the display-manager
+# autologin as soon as it runs. The luks test matches fll_homectl: an @home bind
+# on /home with no fll-persist LUKS mapper means a plaintext persist.
+FLL_AUTOLOGIN="yes"
+if [ -x /usr/bin/homectl ] && mountpoint -q /home && [ ! -e /dev/mapper/fll-persist ]; then
+	FLL_AUTOLOGIN="no"
+fi
+
+# setup desktop autologin for live user
+. /usr/share/fll-live-initscripts/fll_desktop
+
+# systemd-homed support
+if [ -x /usr/bin/homectl ]; then
+	. /usr/share/fll-live-initscripts/fll_homectl
+else
+	. /usr/share/fll-live-initscripts/fll_adduser
+fi
+
+# setup root home dotfiles
+for dotfile in '.bash_logout' '.bash_profile' '.bashrc' '.profile'; do
+	if [ -f /etc/skel/${dotfile} ] && [ ! -f /root/${dotfile} ]; then
+		cp /etc/skel/${dotfile} /root/${dotfile}
+	fi
+done
+:> /root/.hushlogin

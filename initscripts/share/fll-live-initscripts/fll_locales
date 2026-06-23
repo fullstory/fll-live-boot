@@ -1,0 +1,271 @@
+#!/bin/sh
+
+###
+# F.U.L.L.S.T.O.R.Y
+#
+# Copyright: (C) 2007 - 2026 Kel Modderman <kelvmod@gmail.com>
+#            (C) 2008 Michael Deelwater <michael.deelwater@googlemail.com>
+#            (C) 2016 Niall Walsh <niallwalsh@celtux.org>
+#            (C) 2017 - 2024 Stefan Lippers-Hollmann <s.l-h@gmx.de>
+# License:   GPLv2
+#
+# Homepage:  https://github.com/fullstory
+#
+# Description: Configure locale and keyboard layout for the live system
+#              according to the lang= kernel parameter.
+#
+# Locale database: /usr/share/fll-live-initscripts/locales.tsv
+# Columns (tab-separated):
+#   locale            - locale identifier, e.g. de_DE.utf8
+#   is_default        - 1 if this is the primary locale for its language, 0 if regional variant
+#   xkb_layout        - comma-separated XKB layout list, first entry is primary
+#   xkb_variant       - XKB variant for the primary layout (may be empty)
+#   fallback_locales  - space-separated list of locales to try if this one is unavailable
+###
+
+PATH=/usr/sbin:/usr/bin
+NAME="fll-locales"
+
+LOCALE_DB="/usr/share/fll-live-initscripts/locales.tsv"
+
+# Column indices in locales.tsv (1-based); update here if columns are reordered
+COL_LOCALE=1
+COL_IS_DEFAULT=2
+COL_XKB_LAYOUT=3
+COL_XKB_VARIANT=4
+COL_FALLBACKS=5
+
+# Return 0 if the locale is the primary locale for its language group, 1 otherwise.
+locale_is_default() {
+	awk -F'\t' \
+		-v locale="$1" \
+		-v lc="$COL_LOCALE" \
+		-v dc="$COL_IS_DEFAULT" \
+		'BEGIN { status=1 }
+		NR>1 && $lc==locale { status=($dc=="1" ? 0 : 1); exit }
+		END { exit status }' \
+		"$LOCALE_DB"
+}
+
+# Print space-separated fallback locales for the given locale.
+locale_fallbacks() {
+	awk -F'\t' \
+		-v locale="$1" \
+		-v lc="$COL_LOCALE" \
+		-v fc="$COL_FALLBACKS" \
+		'NR>1 && $lc==locale { print $fc; exit }' \
+		"$LOCALE_DB"
+}
+
+# Print the xkb_layout field for the given locale.
+locale_xkb_layout() {
+	awk -F'\t' \
+		-v locale="$1" \
+		-v lc="$COL_LOCALE" \
+		-v kc="$COL_XKB_LAYOUT" \
+		'NR>1 && $lc==locale { print $kc; exit }' \
+		"$LOCALE_DB"
+}
+
+# Print the xkb_variant field for the given locale.
+locale_xkb_variant() {
+	awk -F'\t' \
+		-v locale="$1" \
+		-v lc="$COL_LOCALE" \
+		-v vc="$COL_XKB_VARIANT" \
+		'NR>1 && $lc==locale { print $vc; exit }' \
+		"$LOCALE_DB"
+}
+
+# Resolve the best available LANG value for a language+country pair:
+#   1. Exact ll_CC.utf8 if available on this system
+#   2. Fallbacks listed in DB for that exact locale, first one available
+#   3. Primary locale for the language (is_default=1), if available on this system
+#   4. Fallbacks of that primary locale, first one available
+#   5. First known locale for the language in the DB, if available
+#   6. Fallbacks of that first known locale, first one available
+locale_resolve_lang() {
+	lang_code="$1"
+	country_code="$2"
+	requested="${lang_code}_${country_code}.utf8"
+
+	available=$(locale -a 2>/dev/null)
+
+	# 1. Exact locale is available on this system
+	if printf '%s\n' "$available" | grep -qxF "$requested"; then
+		printf '%s\n' "$requested"
+		return 0
+	fi
+
+	# 2. Exact locale is in DB — try each of its fallbacks
+	for fallback in $(locale_fallbacks "$requested"); do
+		if printf '%s\n' "$available" | grep -qxF "$fallback"; then
+			printf '%s\n' "$fallback"
+			return 0
+		fi
+	done
+
+	# 3+4+5+6. Find the primary (or first known) locale for the language,
+	# try it and its fallbacks
+	for locale in $(awk -F'\t' -v lc="$COL_LOCALE" 'NR>1 { print $lc }' "$LOCALE_DB"); do
+		case "$locale" in
+			${lang_code}_*)
+				locale_is_default "$locale" && lang_def="${lang_def:-$locale}"
+				lang_first="${lang_first:-$locale}"
+				;;
+		esac
+	done
+
+	for candidate in $lang_def $lang_first; do
+		if printf '%s\n' "$available" | grep -qxF "$candidate"; then
+			printf '%s\n' "$candidate"
+			return 0
+		fi
+		for fallback in $(locale_fallbacks "$candidate"); do
+			if printf '%s\n' "$available" | grep -qxF "$fallback"; then
+				printf '%s\n' "$fallback"
+				return 0
+			fi
+		done
+	done
+
+	return 1
+}
+
+# Print the best locale entry to use for keyboard settings given a language+country pair.
+# Tries ll_CC.utf8 exactly, then any *_CC.utf8 in the DB, then falls back to 00_00.utf8.
+locale_for_keyboard() {
+	awk -F'\t' \
+		-v exact="${1}_${2}.utf8" \
+		-v suffix="_${2}.utf8" \
+		-v lc="$COL_LOCALE" \
+		'NR>1 {
+			if ($lc == exact) { found=$lc; exit }
+			if (!any && substr($lc, length($lc)-length(suffix)+1) == suffix) any=$lc
+		}
+		END { print (found ? found : (any ? any : "00_00.utf8")) }' \
+		"$LOCALE_DB"
+}
+
+
+# Defaults — may be overridden by locale DB lookup and/or kernel cmdline
+XKBMODEL="pc105"
+XKBLAYOUT="us"
+XKBVARIANT=""
+XKBOPTIONS=""
+
+# Parse kernel cmdline parameters
+LANG_CMDLINE=""
+KEYTABLE=""
+KBMODEL=""
+KBVARIANT=""
+KBOPTIONS=""
+
+if [ -r /proc/cmdline ]; then
+	read -r CMDLINE < /proc/cmdline
+	for param in $CMDLINE; do
+		case "$param" in
+			lang=*)
+				LANG_CMDLINE=$(printf '%s' "${param#lang=}" | tr '[:upper:]' '[:lower:]')
+				;;
+			keytable=*)
+				KEYTABLE="${param#keytable=}"
+				;;
+			xkbmodel=*)
+				KBMODEL="${param#xkbmodel=}"
+				;;
+			xkbvariant=*)
+				KBVARIANT="${param#xkbvariant=}"
+				;;
+			xkboptions=*)
+				KBOPTIONS="${param#xkboptions=}"
+				;;
+		esac
+	done
+fi
+
+# Split lang= value into language code (ll) and country code (CC).
+# Accepts both dash and underscore as separator: de-AT, de_AT, or bare de.
+# A bare language code (e.g. lang=de) uses the language code as country code
+# too, which causes locale_resolve_lang to search by language only.
+LANG_CODE="${LANG_CMDLINE%%[-_]*}"
+COUNTRY_CODE=$(printf '%s' "${LANG_CMDLINE##*[-_]}" | tr '[:lower:]' '[:upper:]')
+
+# Resolve LANG from the requested language + country
+LANG="en_US.utf8"
+
+if [ -n "$LANG_CMDLINE" ]; then
+	LANG=$(locale_resolve_lang "$LANG_CODE" "$COUNTRY_CODE") || LANG="en_US.utf8"
+fi
+
+export LANG
+
+# If no country code was specified, extract it from the resolved LANG
+# so that keyboard resolution below has a country to work with.
+if [ "$LANG_CODE" = "$COUNTRY_CODE" ] || [ -z "$COUNTRY_CODE" ]; then
+	LANG_BASE="${LANG%%.*}"
+	COUNTRY_CODE="${LANG_BASE##*_}"
+fi
+
+# Resolve keyboard layout from the country code, then apply any cmdline overrides
+KB_LOCALE=$(locale_for_keyboard "$LANG_CODE" "$COUNTRY_CODE")
+XKBLAYOUT=$(locale_xkb_layout "$KB_LOCALE")
+XKBVARIANT=$(locale_xkb_variant "$KB_LOCALE")
+
+[ -n "$KEYTABLE" ]  && XKBLAYOUT="$KEYTABLE"
+[ -n "$KBVARIANT" ] && XKBVARIANT="$KBVARIANT"
+[ -n "$KBMODEL" ]   && XKBMODEL="$KBMODEL"
+[ -n "$KBOPTIONS" ] && XKBOPTIONS="$KBOPTIONS"
+
+set_locale() {
+	grep -q "^LANG=${LANG}$" /etc/locale.conf 2>/dev/null && return 0
+	update-locale "LANG=${LANG}"
+}
+
+set_keyboard() {
+	grep -q "XKBLAYOUT=\"${XKBLAYOUT%%,*}\"" /etc/default/keyboard 2>/dev/null && return 0
+	sed -i \
+		-e "s/^XKBMODEL=.*/XKBMODEL=\"${XKBMODEL}\"/" \
+		-e "s/^XKBLAYOUT=.*/XKBLAYOUT=\"${XKBLAYOUT%%,*}\"/" \
+		-e "s/^XKBVARIANT=.*/XKBVARIANT=\"${XKBVARIANT}\"/" \
+		-e "s/^XKBOPTIONS=.*/XKBOPTIONS=\"${XKBOPTIONS}\"/" \
+		/etc/default/keyboard
+	udevadm trigger --subsystem-match=input --action=change
+}
+
+configure_calamares_geoip() {
+	[ -n "$LANG_CMDLINE" ] && return 0
+
+	mkdir -p /etc/calamares/modules
+
+	if ! grep -q '^geoip:' /etc/calamares/modules/welcome.conf 2>/dev/null; then
+		cat >> /etc/calamares/modules/welcome.conf << 'EOF'
+# added by fll_locales: no language was selected at boot time
+geoip:
+    style:    "xml"
+    url:      "https://geoip.kde.org/v1/ubiquity"
+    selector: "CountryCode"
+EOF
+	fi
+
+	if ! grep -q '^guessLayout:' /etc/calamares/modules/keyboard.conf 2>/dev/null; then
+		cat >> /etc/calamares/modules/keyboard.conf << 'EOF'
+# added by fll_locales: no language was selected at boot time
+guessLayout: true
+EOF
+	fi
+}
+
+case "$1" in
+	start)
+		configure_calamares_geoip
+		set_locale
+		set_keyboard
+		;;
+	*)
+		printf 'Usage: %s start\n' "$NAME" >&2
+		exit 3
+		;;
+esac
+
+:
