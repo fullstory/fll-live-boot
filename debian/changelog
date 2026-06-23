@@ -15,6 +15,7 @@ fll-live-initscripts (20260623.1) UNRELEASED; urgency=medium
   * fll_homectl: do not eagerly activate a luks home on first boot. It cannot
     be auto-logged-in, so activating only added a redundant password prompt
     before the greeter unlock.
+  * Do not allow passwordless root login when systemd-homed is present.
 
  -- Kel Modderman <kelvmod@gmail.com>  Tue, 23 Jun 2026 12:21:11 +1000
 

@@ -33,7 +33,16 @@ if [ -x "$(which homectl)" ]; then
 	fi
 	case "${HOMECTL_STATE}" in
 		active|inactive)
+			# Blessed home: prompt for the user's own password/factor.
 			exec /usr/bin/login "${FLL_LIVE_USER}"
+			;;
+		*)
+			# A homed build, but no usable home for this user: provisioning
+			# was declined or failed. The homed user does not exist in passwd
+			# and its home is not active, so the passwordless fallbacks below
+			# would otherwise hand out a forced root shell. Never do that on a
+			# homed build; fall back to an ordinary authenticated login prompt.
+			exec /usr/bin/login
 			;;
 	esac
 fi
