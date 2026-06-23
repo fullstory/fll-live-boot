@@ -1,4 +1,4 @@
-fll-live-boot (20260623.1) UNRELEASED; urgency=medium
+fll-live-boot (20260623.1) unstable; urgency=medium
 
   * Merge the fll-live-initramfs and fll-live-initscripts source packages into
     a single source package, fll-live-boot. The two were intrinsically coupled:
