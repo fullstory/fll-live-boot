@@ -327,6 +327,10 @@ if [ -d "${FLL_ROOTFS_MNT}/etc/calamares" ]; then
         # not grub -> systemd-boot
         sed -i "s/^efiBootLoader: \"grub\"/efiBootLoader: \"systemd-boot\"/" \
             "${FLL_ROOTFS_MNT}/etc/calamares/modules/bootloader.conf"
+        # systemd-boot stores kernels and initrds on the ESP (BLS), so it
+        # needs a far larger EFI System Partition than grub or refind
+        sed -i "s|^\([[:space:]]*recommendedSize:\).*|\1    1GiB|" \
+            "${FLL_ROOTFS_MNT}/etc/calamares/modules/partition.conf"
     elif [ -d "${FLL_ROOTFS_MNT}/usr/share/refind" ]; then
         # not grub -> refind
         sed -i "s/^efiBootLoader: \"grub\"/efiBootLoader: \"refind\"/" \

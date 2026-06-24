@@ -1,8 +1,10 @@
-fll-live-boot (20260623.3) UNRELEASED; urgency=medium
+fll-live-boot (20260624.1) UNRELEASED; urgency=medium
 
-  * NOT RELEASED YET
+  * Enlarge the calamares EFI System Partition to 1GiB for systemd-boot
+    installs, which store kernels and initrds on the ESP (BLS); grub and
+    refind keep the calamares default.
 
- -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Tue, 23 Jun 2026 20:32:41 +0200
+ -- Kel Modderman <kelvmod@gmail.com>  Wed, 24 Jun 2026 22:40:03 +1000
 
 fll-live-boot (20260623.2) unstable; urgency=medium
 
