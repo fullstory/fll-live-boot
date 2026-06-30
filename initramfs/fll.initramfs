@@ -335,6 +335,9 @@ if [ -d "${FLL_ROOTFS_MNT}/etc/calamares" ]; then
         # not grub -> refind
         sed -i "s/^efiBootLoader: \"grub\"/efiBootLoader: \"refind\"/" \
             "${FLL_ROOTFS_MNT}/etc/calamares/modules/bootloader.conf"
+        # refind can't unlock an encrypted /boot, so hide calamares encryption
+        sed -i "s/^enableLuksAutomatedPartitioning:.*/enableLuksAutomatedPartitioning: false/" \
+            "${FLL_ROOTFS_MNT}/etc/calamares/modules/partition.conf"
     fi
 fi
 
