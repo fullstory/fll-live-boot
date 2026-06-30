@@ -1,9 +1,5 @@
-fll-live-boot (20260630.1) UNRELEASED; urgency=medium
+fll-live-boot (20260630.1) unstable; urgency=medium
 
-  [ Stefan Lippers-Hollmann ]
-  * NOT RELEASED YET
-
-  [ Kel Modderman ]
   * refind can't unlock an encrypted /boot, so hide calamares encryption.
 
  -- Kel Modderman <kelvmod@gmail.com>  Tue, 30 Jun 2026 13:03:56 +1000
