@@ -23,7 +23,7 @@ setup_displaymanager() {
 			# preselect the xsession
 			cat > /etc/skel/.dmrc <<EOF
 [Desktop]
-Session=${FLL_XSESSION}
+Session=${FLL_DM_SESSION}
 EOF
 			;;
 		lightdm)
@@ -36,7 +36,7 @@ EOF
 						printf "autologin-user=%s\nautologin-user-timeout=0\n" \
 							"${FLL_LIVE_USER}"
 					fi
-					printf "autologin-session=%s\n" "${FLL_XSESSION}"
+					printf "autologin-session=%s\n" "${FLL_DM_SESSION}"
 				} >"/etc/lightdm/lightdm.conf.d/80_${FLL_LIVE_USER}.conf"
 			fi
 			;;
@@ -53,7 +53,7 @@ EOF
 		sddm)
 			mkdir -p /etc/sddm.conf.d
 			if [ "${FLL_AUTOLOGIN}" = "yes" ]; then
-				printf "\n[Autologin]\nUser=${FLL_LIVE_USER}\nSession=${FLL_XSESSION}\nRelogin=true\n" \
+				printf "\n[Autologin]\nUser=${FLL_LIVE_USER}\nSession=${FLL_DM_SESSION}\nRelogin=true\n" \
 					>>"/etc/sddm.conf.d/${FLL_LIVE_USER}.conf"
 			else
 				# encrypted homed home: no autologin; the greeter prompts for the
@@ -82,8 +82,9 @@ EOF
 			fi
 		;;
 		greetd)
-			if [ "${FLL_XSESSION}" = "hyprland" ]; then
-				EXECUTE_CMD="Hyprland"
+			if [ "${FLL_XSESSION}" = "hyprland" ] || \
+				[ "${FLL_XSESSION}" = "hyprland-uwsm" ]; then
+				EXECUTE_CMD="uwsm start hyprland.desktop"
 			else
 				EXECUTE_CMD="${FLL_XSESSION}"
 			fi
@@ -272,15 +273,15 @@ XKB_DEFAULT_LAYOUT="${XKB_DEFAULT_LAYOUT}"
 EOF
 			fi
 			;;
-		hyprland)
+		hyprland|hyprland-uwsm)
 			# Hyprland doesn't appear to read from /etc/xdg
 			mkdir -p /etc/skel/.config
 			cp -a /usr/share/aptosid-settings-hyprland/hypr /etc/skel/.config/
 			. /etc/default/keyboard
-			sed -i "s#\#kb_model =#kb_layout = ${XKBLAYOUT}#" /etc/skel/.config/hypr/hyprland.conf
-			sed -i "s#\#kb_variant =#kb_variant = ${XKBVARIANT}#" /etc/skel/.config/hypr/hyprland.conf
-			sed -i "s#\#kb_model =#kb_model = ${XKBMODEL}#" /etc/skel/.config/hypr/hyprland.conf
-			sed -i "s#\#kb_options =#kb_options = ${XKBOPTIONS}#" /etc/skel/.config/hypr/hyprland.conf
+			sed -i "s#kb_layout *= *\"\"#kb_layout  = \"${XKBLAYOUT}\"#" /etc/skel/.config/hypr/hyprland.lua
+			sed -i "s#kb_variant *= *\"\"#kb_variant = \"${XKBVARIANT}\"#" /etc/skel/.config/hypr/hyprland.lua
+			sed -i "s#kb_model *= *\"\"#kb_model   = \"${XKBMODEL}\"#" /etc/skel/.config/hypr/hyprland.lua
+			sed -i "s#kb_options *= *\"\"#kb_options = \"${XKBOPTIONS}\"#" /etc/skel/.config/hypr/hyprland.lua
 			;;
 		sway)
 			mkdir -p /etc/skel/.config/sway
@@ -308,6 +309,16 @@ for opt in $(cat /proc/cmdline); do
 			;;
 	esac
 done
+
+# display managers should launch the uwsm-managed Hyprland session when the
+# hyprland package provides it, so the compositor runs as a proper systemd
+# session. FLL_XSESSION is left as-is for the skel config above; only the
+# session name handed to the display manager changes.
+FLL_DM_SESSION="${FLL_XSESSION}"
+if [ "${FLL_XSESSION}" = "hyprland" ] && \
+	[ -f /usr/share/wayland-sessions/hyprland-uwsm.desktop ]; then
+	FLL_DM_SESSION="hyprland-uwsm"
+fi
 
 # configure displaymanager
 for displaymanager in greetd slim lxdm lightdm gdm3 sddm; do
