@@ -274,14 +274,19 @@ EOF
 			fi
 			;;
 		hyprland|hyprland-uwsm)
-			# Hyprland doesn't appear to read from /etc/xdg
-			mkdir -p /etc/skel/.config
-			cp -a /usr/share/aptosid-settings-hyprland/hypr /etc/skel/.config/
+			# Hyprland reads its default config from /etc/xdg/hypr/hyprland.lua
+			# (shipped by aptosid-settings-hyprland), so /etc/skel needs no
+			# seeding. That config leaves kb_layout empty, so hand the live
+			# keyboard layout to libxkbcommon via XKB_DEFAULT_* in a uwsm env
+			# drop-in sourced for the Hyprland session.
 			. /etc/default/keyboard
-			sed -i "s#kb_layout *= *\"\"#kb_layout  = \"${XKBLAYOUT}\"#" /etc/skel/.config/hypr/hyprland.lua
-			sed -i "s#kb_variant *= *\"\"#kb_variant = \"${XKBVARIANT}\"#" /etc/skel/.config/hypr/hyprland.lua
-			sed -i "s#kb_model *= *\"\"#kb_model   = \"${XKBMODEL}\"#" /etc/skel/.config/hypr/hyprland.lua
-			sed -i "s#kb_options *= *\"\"#kb_options = \"${XKBOPTIONS}\"#" /etc/skel/.config/hypr/hyprland.lua
+			mkdir -p /etc/xdg/uwsm/env-hyprland.d
+			cat > /etc/xdg/uwsm/env-hyprland.d/10-keyboard <<EOF
+export XKB_DEFAULT_LAYOUT="${XKBLAYOUT}"
+export XKB_DEFAULT_VARIANT="${XKBVARIANT}"
+export XKB_DEFAULT_MODEL="${XKBMODEL}"
+export XKB_DEFAULT_OPTIONS="${XKBOPTIONS}"
+EOF
 			;;
 		sway)
 			mkdir -p /etc/skel/.config/sway
