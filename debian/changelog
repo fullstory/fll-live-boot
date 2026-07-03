@@ -1,8 +1,17 @@
-fll-live-boot (20260630.2) UNRELEASED; urgency=medium
+fll-live-boot (20260703.1) UNRELEASED; urgency=medium
 
   * NOT RELEASED YET
 
- -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Tue, 30 Jun 2026 23:53:03 +0200
+  [ Kel Modderman ]
+  * fll_desktop: adapt Hyprland setup to the Lua config required since
+    Hyprland 0.55. Inject the live keyboard layout into hyprland.lua (was
+    hyprland.conf) via the kb_* = "" placeholders. Launch Hyprland as a
+    uwsm-managed systemd session: the greetd session runs "uwsm start
+    hyprland.desktop", and sddm/gdm3/lightdm are pointed at the
+    hyprland-uwsm.desktop session (falling back to plain hyprland when the
+    hyprland package does not provide it).
+
+ -- Kel Modderman <kelvmod@gmail.com>  Fri, 03 Jul 2026 20:54:19 +1000
 
 fll-live-boot (20260630.1) unstable; urgency=medium
 
