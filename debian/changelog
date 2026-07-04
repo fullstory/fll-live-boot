@@ -1,8 +1,13 @@
-fll-live-boot (20260703.2) UNRELEASED; urgency=medium
+fll-live-boot (20260704.1) UNRELEASED; urgency=medium
 
   * NOT RELEASED YET
 
- -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Fri, 03 Jul 2026 22:22:22 +0200
+  [ Kel Modderman ]
+  * fll_desktop: write the Hyprland uwsm keyboard drop-in via the shared
+    aptosid-settings-hyprland keyboard-env helper instead of inlining it, so
+    the live media and the calamares post-install path use identical logic.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Sat, 04 Jul 2026 12:40:38 +1000
 
 fll-live-boot (20260703.1) unstable; urgency=medium
 
