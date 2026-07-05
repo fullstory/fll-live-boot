@@ -14,6 +14,9 @@ fll-live-boot (20260705.1) UNRELEASED; urgency=medium
     fll_session_passwordless, gated on the /run/fll/passwordless marker.
   * Inhibit auto-suspend for any live session (fll_inhibit_suspend via XDG
     autostart, gated on /run/fll), so it does not suspend mid-install.
+  * fll_desktop: strip the .desktop suffix when writing Calamares'
+    desktopFile, so the installer finds the session file instead of
+    searching for <name>.desktop.desktop.
 
  -- Kel Modderman <kelvmod@gmail.com>  Sun, 05 Jul 2026 13:56:52 +1000
 
