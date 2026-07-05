@@ -282,11 +282,8 @@ EOF
 			[ -x /usr/libexec/aptosid-settings-hyprland/keyboard-env ] && \
 				/usr/libexec/aptosid-settings-hyprland/keyboard-env
 
-			# hypridle locks the screen on idle via hyprlock. A passwordless
-			# autologin live user has nothing to unlock with, so mask the idle
-			# daemon; a homed live user has a password (no autologin) and keeps
-			# idle locking. Installed systems are unaffected.
-			if [ "${FLL_AUTOLOGIN}" = "yes" ] && \
+			# The passwordless (non-homed) user cannot unlock hyprlock; mask it.
+			if [ "${FLL_PASSWORDLESS}" = "yes" ] && \
 				[ -f /usr/lib/systemd/user/hypridle.service ]; then
 				systemctl --global mask hypridle.service
 			fi

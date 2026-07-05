@@ -12,7 +12,7 @@ initramfs).
 | Path | Contents |
 |------|----------|
 | `initramfs/` | initramfs payload: `fll.initramfs`, `fll.shutdown`, and the `initramfs-tools/` and `dracut/` generator integration |
-| `initscripts/` | running-system payload: systemd-helper scripts (`share/`), the polkit rule `90-fll.rules`, and the shutdown `/run` remount helper |
+| `initscripts/` | running-system payload: systemd-helper scripts (`share/`, including the `90-fll.rules` polkit grant that `fll_home` deploys to `/run` only for the passwordless non-homed user), and the shutdown `/run` remount helper |
 | `utils/` | `fll_blockdev_detect` (C, baked into the initramfs) and `fll_login` (getty helper) |
 | `debian/` | packaging for all binary packages |
 

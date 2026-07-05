@@ -1,5 +1,5 @@
-// Allow any user in the 'sudo' group to execute anything
-// without entering a password.
+// Blanket polkit YES for local active sudo-group members. fll_home deploys this
+// to /run/polkit-1/rules.d only for the passwordless (non-homed) live user.
 
 polkit.addRule(function(action, subject) {
     if (subject.local && subject.active && subject.isInGroup("sudo")) {

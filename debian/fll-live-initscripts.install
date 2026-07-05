@@ -1,3 +1,2 @@
 initscripts/fll.shutdown                 usr/lib/systemd/system-shutdown
 initscripts/share/fll-live-initscripts/* usr/share/fll-live-initscripts
-initscripts/90-fll.rules                 usr/share/polkit-1/rules.d
