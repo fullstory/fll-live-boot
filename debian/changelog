@@ -10,8 +10,8 @@ fll-live-boot (20260705.1) UNRELEASED; urgency=medium
     passwordless (non-homed) user, rather than shipping it active for every
     sudo-group member (which covered passworded homed users too).
   * Move the passwordless-user screen-lock relaxations (cinnamon, gnome, budgie,
-    plasma, xfce, and now mate) out of fll_adduser into fll_session_passwordless,
-    gated on the /run/fll/passwordless marker.
+    plasma, xfce, and now mate) out of fll_adduser into
+    fll_session_passwordless, gated on the /run/fll/passwordless marker.
   * Inhibit auto-suspend for any live session (fll_inhibit_suspend via XDG
     autostart, gated on /run/fll), so it does not suspend mid-install.
 
