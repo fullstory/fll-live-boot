@@ -33,6 +33,9 @@ else
 	. /usr/share/fll-live-initscripts/fll_adduser
 fi
 
+# relax screen locking for a passwordless live user (no-op otherwise)
+. /usr/share/fll-live-initscripts/fll_session_passwordless
+
 # setup root home dotfiles
 for dotfile in '.bash_logout' '.bash_profile' '.bashrc' '.profile'; do
 	if [ -f /etc/skel/${dotfile} ] && [ ! -f /root/${dotfile} ]; then

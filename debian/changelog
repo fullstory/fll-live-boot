@@ -9,6 +9,9 @@ fll-live-boot (20260705.1) UNRELEASED; urgency=medium
   * Deploy the 90-fll.rules passwordless polkit grant to /run only for the
     passwordless (non-homed) user, rather than shipping it active for every
     sudo-group member (which covered passworded homed users too).
+  * Move the passwordless-user screen-lock relaxations (cinnamon, gnome, budgie,
+    plasma, xfce, and now mate) out of fll_adduser into fll_session_passwordless,
+    gated on the /run/fll/passwordless marker.
 
  -- Kel Modderman <kelvmod@gmail.com>  Sun, 05 Jul 2026 13:56:52 +1000
 
