@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=fll live suspend inhibitor
+Comment=Prevent the live session from auto-suspending mid-install
+Exec=/usr/share/fll-live-initscripts/fll_inhibit_suspend
+NoDisplay=true
+X-GNOME-Autostart-enabled=true

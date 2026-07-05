@@ -1,0 +1,12 @@
+#!/bin/sh
+#
+# Block auto-suspend for the duration of a live session (no-op on an installed
+# system). Launched from XDG autostart, so the inhibitor is released at logout.
+[ -d /run/fll ] || exit 0
+
+exec systemd-inhibit \
+    --what=sleep:handle-lid-switch \
+    --who="fll-live" \
+    --why="live session" \
+    --mode=block \
+    sleep infinity

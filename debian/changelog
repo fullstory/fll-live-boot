@@ -12,6 +12,8 @@ fll-live-boot (20260705.1) UNRELEASED; urgency=medium
   * Move the passwordless-user screen-lock relaxations (cinnamon, gnome, budgie,
     plasma, xfce, and now mate) out of fll_adduser into fll_session_passwordless,
     gated on the /run/fll/passwordless marker.
+  * Inhibit auto-suspend for any live session (fll_inhibit_suspend via XDG
+    autostart, gated on /run/fll), so it does not suspend mid-install.
 
  -- Kel Modderman <kelvmod@gmail.com>  Sun, 05 Jul 2026 13:56:52 +1000
 
