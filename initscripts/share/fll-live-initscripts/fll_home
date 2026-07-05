@@ -12,9 +12,13 @@ if [ -x /usr/bin/homectl ]; then
 	fi
 fi
 
-# Passwordless polkit grant: only the non-homed user needs it. Deploy to /run,
-# out of the read-only image.
+# The passwordless (non-homed) user cannot authenticate. Publish that as a /run
+# marker (the single signal session scripts read to relax lock/idle) and deploy
+# the blanket polkit grant, both kept out of the read-only image.
 if [ "${FLL_PASSWORDLESS}" = "yes" ]; then
+	mkdir -p /run/fll
+	: > /run/fll/passwordless
+
 	mkdir -p /run/polkit-1/rules.d
 	cp /usr/share/fll-live-initscripts/90-fll.rules /run/polkit-1/rules.d/90-fll.rules
 fi

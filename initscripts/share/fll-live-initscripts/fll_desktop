@@ -283,7 +283,7 @@ EOF
 				/usr/libexec/aptosid-settings-hyprland/keyboard-env
 
 			# The passwordless (non-homed) user cannot unlock hyprlock; mask it.
-			if [ "${FLL_PASSWORDLESS}" = "yes" ] && \
+			if [ -e /run/fll/passwordless ] && \
 				[ -f /usr/lib/systemd/user/hypridle.service ]; then
 				systemctl --global mask hypridle.service
 			fi

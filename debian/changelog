@@ -2,8 +2,10 @@ fll-live-boot (20260705.1) UNRELEASED; urgency=medium
 
   [ Kel Modderman ]
   * NOT RELEASED YET
-  * fll_desktop: mask hypridle.service for the Hyprland session's passwordless
-    (non-homed) live user, who cannot unlock hyprlock.
+  * fll_home: publish /run/fll/passwordless for the passwordless (non-homed)
+    live user - the single marker session scripts read to relax lock/idle.
+  * fll_desktop: mask hypridle.service when that marker is present, so the
+    passwordless user's Hyprland session does not idle-lock behind hyprlock.
   * Deploy the 90-fll.rules passwordless polkit grant to /run only for the
     passwordless (non-homed) user, rather than shipping it active for every
     sudo-group member (which covered passworded homed users too).
