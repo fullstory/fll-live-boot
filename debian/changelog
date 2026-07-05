@@ -1,3 +1,9 @@
+fll-live-boot (20260705.2) UNRELEASED; urgency=medium
+
+  * NOT RELEASED YET
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Sun, 05 Jul 2026 23:36:20 +0200
+
 fll-live-boot (20260705.1) unstable; urgency=medium
 
   * fll_home: publish /run/fll/passwordless for the passwordless (non-homed)
