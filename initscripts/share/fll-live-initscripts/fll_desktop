@@ -281,6 +281,15 @@ EOF
 			# XKB_DEFAULT_* (the same helper calamares runs post-install).
 			[ -x /usr/libexec/aptosid-settings-hyprland/keyboard-env ] && \
 				/usr/libexec/aptosid-settings-hyprland/keyboard-env
+
+			# hypridle locks the screen on idle via hyprlock. A passwordless
+			# autologin live user has nothing to unlock with, so mask the idle
+			# daemon; a homed live user has a password (no autologin) and keeps
+			# idle locking. Installed systems are unaffected.
+			if [ "${FLL_AUTOLOGIN}" = "yes" ] && \
+				[ -f /usr/lib/systemd/user/hypridle.service ]; then
+				systemctl --global mask hypridle.service
+			fi
 			;;
 		sway)
 			mkdir -p /etc/skel/.config/sway
