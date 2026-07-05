@@ -1,7 +1,5 @@
-fll-live-boot (20260705.1) UNRELEASED; urgency=medium
+fll-live-boot (20260705.1) unstable; urgency=medium
 
-  [ Kel Modderman ]
-  * NOT RELEASED YET
   * fll_home: publish /run/fll/passwordless for the passwordless (non-homed)
     live user - the single marker session scripts read to relax lock/idle.
   * fll_desktop: mask hypridle.service when that marker is present, so the
