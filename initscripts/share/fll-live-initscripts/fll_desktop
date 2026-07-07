@@ -97,41 +97,6 @@ EOF
 				GREETER_CMD="${GREETER_CMD} --power-shutdown 'systemctl -i poweroff'"
 				GREETER_CMD="${GREETER_CMD} --power-reboot 'systemctl -i reboot'"
 				GREETER_CMD="${GREETER_CMD} --cmd '${EXECUTE_CMD}' --theme '${TUITHEME}'"
-			else
-				case "${FLL_XSESSION}" in
-					sway|hyprland)
-					GREETER_CMD="${EXECUTE_CMD} --config /etc/greetd/${FLL_XSESSION}-config"
-					GREETER="agreety -c ${EXECUTE_CMD}"
-					[ -x /usr/sbin/wlgreet ] && GREETER="wlgreet -c ${EXECUTE_CMD}"
-					[ -x /usr/bin/gtkgreet ] && GREETER="gtkgreet -l -c ${EXECUTE_CMD}"
-					if [ -x /usr/bin/nwg-hello ]; then
-						GREETER_CMD= "${EXECUTE_CMD} -c /etc/nwg-hello/${FLL_XSESSION}-config"
-					elif [ "${FLL_XSESSION}" = "sway" ]; then
-						cat > /etc/greetd/sway-config <<EOF
-exec "${GREETER}; swaymsg exit"
-
-bindsym Mod4+shift+e exec swaynag \
--t warning \
--m 'What do you want to do?' \
--b 'Poweroff' 'systemctl -i poweroff' \
--b 'Reboot' 'systemctl -i reboot'
-
-include /etc/sway/sway-config.d/*
-EOF
-					elif [ "${FLL_XSESSION}" = "hyprland" ]; then
-						cat > /etc/greetd/hyprland.conf <<EOF
-exec-once = ${GREETER}; hyprctl dispatch exit
-EOF
-					fi
-					;;
-
-					labwc)
-					GREETER="agreety"
-					[ -x /usr/sbin/wlgreet ] && GREETER="wlgreet"
-					[ -x /usr/bin/gtkgreet ] && GREETER="gtkgreet"
-					GREETER_CMD="labwc --startup ${GREETER}"
-					;;
-				esac
 			fi
 
 			if [ -n "${GREETER_CMD}" ]; then

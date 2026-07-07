@@ -1,8 +1,13 @@
-fll-live-boot (20260705.2) UNRELEASED; urgency=medium
+fll-live-boot (20260707.1) UNRELEASED; urgency=medium
 
+  [ Stefan Lippers-Hollmann ]
   * NOT RELEASED YET
 
- -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Sun, 05 Jul 2026 23:36:20 +0200
+  [ Kel Modderman ]
+  * fll_desktop: drop the untested agreety, wlgreet and gtkgreet greetd
+    greeters. tuigreet now handles all greetd sessions, including labwc.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Tue, 07 Jul 2026 19:05:22 +1000
 
 fll-live-boot (20260705.1) unstable; urgency=medium
 
