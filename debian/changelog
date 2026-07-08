@@ -1,4 +1,4 @@
-fll-live-boot (20260707.1) UNRELEASED; urgency=medium
+fll-live-boot (20260708.1) UNRELEASED; urgency=medium
 
   [ Stefan Lippers-Hollmann ]
   * NOT RELEASED YET
@@ -6,8 +6,14 @@ fll-live-boot (20260707.1) UNRELEASED; urgency=medium
   [ Kel Modderman ]
   * fll_desktop: drop the untested agreety, wlgreet and gtkgreet greetd
     greeters. tuigreet now handles all greetd sessions, including labwc.
+  * fll_desktop: launch the Sway and labwc live sessions through uwsm
+    (via aptosid-settings-{sway,labwc}'s *-uwsm.desktop files) as
+    already done for Hyprland, so session-wide /etc/environment.d and
+    /etc/xdg/uwsm/env variables -- notably the Qt kvantum dark style --
+    reach the compositor. Generalised the greetd command and the
+    display-manager session selection accordingly.
 
- -- Kel Modderman <kelvmod@gmail.com>  Tue, 07 Jul 2026 19:05:22 +1000
+ -- Kel Modderman <kelvmod@gmail.com>  Wed, 08 Jul 2026 12:15:09 +1000
 
 fll-live-boot (20260705.1) unstable; urgency=medium
 

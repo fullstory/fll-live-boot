@@ -82,12 +82,16 @@ EOF
 			fi
 		;;
 		greetd)
-			if [ "${FLL_XSESSION}" = "hyprland" ] || \
-				[ "${FLL_XSESSION}" = "hyprland-uwsm" ]; then
-				EXECUTE_CMD="uwsm start hyprland.desktop"
-			else
-				EXECUTE_CMD="${FLL_XSESSION}"
-			fi
+			# uwsm-managed sessions (FLL_DM_SESSION ends in -uwsm) start the
+			# compositor via uwsm; everything else runs its bare command.
+			case "${FLL_DM_SESSION}" in
+				*-uwsm)
+					EXECUTE_CMD="uwsm start ${FLL_DM_SESSION%-uwsm}.desktop"
+					;;
+				*)
+					EXECUTE_CMD="${FLL_XSESSION}"
+					;;
+			esac
 
 			if [ -n "${FLL_XSESSION}" ] && [ -x /usr/bin/tuigreet ]; then
 				TUITHEME="border=magenta;text=cyan;prompt=cyan;time=cyan;action=cyan;button=magenta;container=black;input=magenta"
@@ -280,15 +284,19 @@ for opt in $(cat /proc/cmdline); do
 	esac
 done
 
-# display managers should launch the uwsm-managed Hyprland session when the
-# hyprland package provides it, so the compositor runs as a proper systemd
-# session. FLL_XSESSION is left as-is for the skel config above; only the
-# session name handed to the display manager changes.
+# display managers should launch the uwsm-managed session when a
+# *-uwsm.desktop is provided (Hyprland, Sway, labwc), so the compositor runs
+# as a proper systemd session and picks up /etc/environment.d and
+# /etc/xdg/uwsm/env. FLL_XSESSION is left as-is for the skel config above;
+# only the session name handed to the display manager changes.
 FLL_DM_SESSION="${FLL_XSESSION}"
-if [ "${FLL_XSESSION}" = "hyprland" ] && \
-	[ -f /usr/share/wayland-sessions/hyprland-uwsm.desktop ]; then
-	FLL_DM_SESSION="hyprland-uwsm"
-fi
+case "${FLL_XSESSION}" in
+	hyprland|sway|labwc)
+		if [ -f "/usr/share/wayland-sessions/${FLL_XSESSION}-uwsm.desktop" ]; then
+			FLL_DM_SESSION="${FLL_XSESSION}-uwsm"
+		fi
+		;;
+esac
 
 # configure displaymanager
 for displaymanager in greetd slim lxdm lightdm gdm3 sddm; do
