@@ -1,9 +1,5 @@
-fll-live-boot (20260708.1) UNRELEASED; urgency=medium
+fll-live-boot (20260708.1) unstable; urgency=medium
 
-  [ Stefan Lippers-Hollmann ]
-  * NOT RELEASED YET
-
-  [ Kel Modderman ]
   * fll_desktop: drop the untested agreety, wlgreet and gtkgreet greetd
     greeters. tuigreet now handles all greetd sessions, including labwc.
   * fll_desktop: launch the Sway and labwc live sessions through uwsm
