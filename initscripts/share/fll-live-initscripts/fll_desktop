@@ -228,6 +228,13 @@ setup_desktop() {
 			sed -e 's/Vent/Vent-dark/' \
 				/usr/share/lxqt/wayland/labwc/rc.xml \
 				> /etc/skel/.config/labwc/rc.xml
+			# startlxqtwayland runs labwc with -C ~/.config/labwc, so it
+			# never reads /etc/xdg/labwc/environment. Seed the cursor from
+			# lxqt's [Mouse] section so the wayland session matches the rest.
+			sed -n	-e 's/^cursor_size=/XCURSOR_SIZE=/p' \
+				-e 's/^cursor_theme=/XCURSOR_THEME=/p' \
+				/etc/xdg/lxqt/session.conf \
+				> /etc/skel/.config/labwc/environment
 			;;
 		labwc)
 			. /etc/default/keyboard
