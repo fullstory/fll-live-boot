@@ -1,9 +1,5 @@
-fll-live-boot (20260709.1) UNRELEASED; urgency=medium
+fll-live-boot (20260709.1) unstable; urgency=medium
 
-  [ Stefan Lippers-Hollmann ]
-  * NOT RELEASED YET
-
-  [ Kel Modderman ]
   * fll_desktop: the lxqt-wayland session runs labwc with -C
     ~/.config/labwc, so labwc never reads /etc/xdg/labwc/environment and
     the Bibata mouse cursor was lost. Seed ~/.config/labwc/environment
