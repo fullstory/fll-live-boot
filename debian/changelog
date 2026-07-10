@@ -1,8 +1,17 @@
-fll-live-boot (20260709.2) UNRELEASED; urgency=medium
+fll-live-boot (20260710.1) UNRELEASED; urgency=medium
 
+  [ Stefan Lippers-Hollmann ]
   * NOT RELEASED YET
 
- -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Thu, 09 Jul 2026 22:38:41 +0200
+  [ Kel Modderman ]
+  * fll-live-initramfs, fll-live-initscripts: fix the preinst chroot
+    guard for pyfll builds. pyfll now builds with systemd-nspawn --as-
+    pid2, where PID 1 lives inside the container and shares its root, so
+    the classic chroot test no longer fires and installation was wrongly
+    aborted. Detect the container via the $container env var nspawn
+    exports, and always fall back to systemd-detect-virt.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Fri, 10 Jul 2026 20:48:52 +1000
 
 fll-live-boot (20260709.1) unstable; urgency=medium
 

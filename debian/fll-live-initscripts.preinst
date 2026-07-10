@@ -10,11 +10,16 @@ chrooted() {
 		return 0
 	fi
 
-	# nspawn: PID 1 root matches container root, but systemd sets this
-	if [ -d /run/systemd ]; then
-		if systemd-detect-virt --quiet --container 2>/dev/null; then
-			return 0
-		fi
+	# systemd-nspawn (e.g. --as-pid2): PID 1 root matches the container
+	# root, so the test above fails. nspawn exports this env var, which
+	# dpkg/preinst inherit.
+	if [ -n "${container:-}" ]; then
+		return 0
+	fi
+
+	# other container runtimes
+	if systemd-detect-virt --quiet --container 2>/dev/null; then
+		return 0
 	fi
 
 	return 1
