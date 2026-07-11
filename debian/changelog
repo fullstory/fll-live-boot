@@ -1,4 +1,4 @@
-fll-live-boot (20260710.1) UNRELEASED; urgency=medium
+fll-live-boot (20260711.1) UNRELEASED; urgency=medium
 
   [ Stefan Lippers-Hollmann ]
   * NOT RELEASED YET
@@ -10,8 +10,13 @@ fll-live-boot (20260710.1) UNRELEASED; urgency=medium
     the classic chroot test no longer fires and installation was wrongly
     aborted. Detect the container via the $container env var nspawn
     exports, and always fall back to systemd-detect-virt.
+  * fll_desktop: add Miriway as an LXQt Wayland compositor option.
+  * fll_desktop: seed the live keyboard layout, aptosid wallpaper and
+    cursor into the labwc, sway, wayfire and hyprland LXQt Wayland
+    sessions, instead of relying on lxqt-wayland-session's $LANG-based
+    guess and LXQt defaults.
 
- -- Kel Modderman <kelvmod@gmail.com>  Fri, 10 Jul 2026 20:48:52 +1000
+ -- Kel Modderman <kelvmod@gmail.com>  Sat, 11 Jul 2026 12:39:51 +1000
 
 fll-live-boot (20260709.1) unstable; urgency=medium
 

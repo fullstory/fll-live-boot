@@ -206,6 +206,24 @@ setup_desktop() {
 					sed -i 's#^compositor=.*#compositor=/usr/bin/Hyprland#' \
 						/etc/xdg/lxqt/session.conf
 					;;
+				lxqt-miriway)
+					[ -x /usr/bin/miriway ] && \
+					sed -i 's#^compositor=.*#compositor=/usr/bin/miriway#' \
+						/etc/xdg/lxqt/session.conf
+					# startlxqtwayland has no miriway branch, so it falls back
+					# to `exec miriway`, which reads ~/.config/miriway-shell.config;
+					# seed an LXQt shell there (miriway's own default config is a
+					# bare compositor). cp before append keeps this idempotent.
+					if [ -f /usr/share/aptosid-settings-lxqt/miriway/miriway-shell.config ]; then
+						. /etc/default/keyboard
+						mkdir -p /etc/skel/.config
+						cp /usr/share/aptosid-settings-lxqt/miriway/miriway-shell.config \
+							/etc/skel/.config/miriway-shell.config
+						[ "${XKBLAYOUT}" ] && \
+							printf 'keymap=%s\n' "${XKBLAYOUT}" \
+								>> /etc/skel/.config/miriway-shell.config
+					fi
+					;;
 				lxqt-sway)
 					[ -x /usr/bin/sway ] && \
 					sed -i 's#^compositor=.*#compositor=/usr/bin/sway#' \
@@ -235,6 +253,57 @@ setup_desktop() {
 				-e 's/^cursor_theme=/XCURSOR_THEME=/p' \
 				/etc/xdg/lxqt/session.conf \
 				> /etc/skel/.config/labwc/environment
+
+			# Override startlxqtwayland's first-login defaults (it guesses the
+			# keymap from $LANG and ships the LXQt wallpaper). Seed each
+			# compositor config into /etc/skel with the live keyboard layout
+			# and the aptosid wallpaper/cursor; startlxqtwayland then keeps our
+			# copy. sed-from-source keeps this idempotent.
+			. /etc/default/keyboard
+			cursor_theme=$(sed -n 's/^cursor_theme=//p' /etc/xdg/lxqt/session.conf)
+			cursor_size=$(sed -n 's/^cursor_size=//p' /etc/xdg/lxqt/session.conf)
+			wallpaper=/usr/share/wallpapers/aptosid-nemesis-wide.png
+			wayland_dir=/usr/share/lxqt/wayland
+			skel_wayland=/etc/skel/.config/lxqt/wayland
+			mkdir -p "${skel_wayland}"
+			# labwc: add the live keyboard to the environment seeded above and a
+			# wallpaper autostart (the dir now exists, so startlxqtwayland won't
+			# copy its own).
+			printf 'XKB_DEFAULT_LAYOUT=%s\nXKB_DEFAULT_VARIANT=%s\nXKB_DEFAULT_MODEL=%s\nXKB_DEFAULT_OPTIONS=%s\n' \
+				"${XKBLAYOUT}" "${XKBVARIANT}" "${XKBMODEL}" "${XKBOPTIONS}" \
+				>> /etc/skel/.config/labwc/environment
+			[ -f "${wayland_dir}/labwc/autostart" ] && \
+				sed "s#/usr/share/lxqt/wallpapers/[^ \"]*\.png#${wallpaper}#g" \
+					"${wayland_dir}/labwc/autostart" \
+					> /etc/skel/.config/labwc/autostart
+			# sway (native output bg; quoted xkb like aptosid's sway config)
+			[ -f "${wayland_dir}/lxqt-sway.config" ] && {
+				sed -e "s#/usr/share/lxqt/wallpapers/[^ \"]*\.png#${wallpaper}#g" \
+					-e "s#^[[:space:]]*xkb_layout .*#    xkb_layout \"${XKBLAYOUT}\"\n    xkb_variant \"${XKBVARIANT}\"#" \
+					-e "s#^[[:space:]]*xkb_options .*#    xkb_options \"${XKBOPTIONS}\"#" \
+					"${wayland_dir}/lxqt-sway.config" \
+					> "${skel_wayland}/lxqt-sway.config"
+				[ "${cursor_theme}" ] && \
+					printf 'seat * xcursor_theme %s %s\n' "${cursor_theme}" "${cursor_size}" \
+						>> "${skel_wayland}/lxqt-sway.config"
+			}
+			# wayfire
+			[ -f "${wayland_dir}/lxqt-wayfire.ini" ] && \
+				sed -e "s#/usr/share/lxqt/wallpapers/[^ \"]*\.png#${wallpaper}#g" \
+					-e "s/^xkb_layout =.*/xkb_layout = ${XKBLAYOUT}/" \
+					-e "s/^xkb_variant =.*/xkb_variant = ${XKBVARIANT}/" \
+					-e "s/^xkb_options =.*/xkb_options = ${XKBOPTIONS}/" \
+					-e "s/^cursor_theme =.*/cursor_theme = ${cursor_theme}/" \
+					-e "s/^cursor_size =.*/cursor_size = ${cursor_size}/" \
+					"${wayland_dir}/lxqt-wayfire.ini" \
+					> "${skel_wayland}/lxqt-wayfire.ini"
+			# hyprland (startlxqtwayland uses the .lua unless a .conf exists)
+			[ -f "${wayland_dir}/lxqt-hyprland.lua" ] && \
+				sed -e "s#/usr/share/lxqt/wallpapers/[^ \"]*\.png#${wallpaper}#g" \
+					-e "s/kb_layout  *= \"[^\"]*\"/kb_layout = \"${XKBLAYOUT}\"/" \
+					-e "s/kb_variant  *= \"[^\"]*\"/kb_variant = \"${XKBVARIANT}\"/" \
+					"${wayland_dir}/lxqt-hyprland.lua" \
+					> "${skel_wayland}/lxqt-hyprland.lua"
 			;;
 		labwc)
 			. /etc/default/keyboard
