@@ -94,22 +94,16 @@ EOF
 			esac
 
 			if [ -n "${FLL_XSESSION}" ] && [ -x /usr/bin/gtkgreet ] && \
-				{ [ -x /usr/bin/cage ] || [ -x /usr/bin/sway ]; }; then
-				# gtkgreet is graphical; host it in a wlroots compositor that
-				# exits once it finalizes a login (see gtkgreet(1)). cage is a
-				# single-window kiosk (no layer shell); sway needs -l and an
-				# explicit exit once gtkgreet returns.
+				[ -x /usr/bin/cage ]; then
+				# gtkgreet is graphical and needs a host compositor. cage is a
+				# single-window kiosk that exits when gtkgreet finalizes a login,
+				# so it hosts the greeter for any session (the host is unrelated
+				# to the session gtkgreet launches). One host, no per-compositor
+				# config to generate or preserve.
 				GTKGREET_STYLE=""
 				[ -f /etc/greetd/gtkgreet.css ] && \
 					GTKGREET_STYLE=" -s /etc/greetd/gtkgreet.css"
-				if [ -x /usr/bin/cage ]; then
-					GREETER_CMD="cage -s -- gtkgreet${GTKGREET_STYLE} -c '${EXECUTE_CMD}'"
-				else
-					cat > /etc/greetd/sway-config <<EOF
-exec "gtkgreet -l${GTKGREET_STYLE} -c '${EXECUTE_CMD}'; swaymsg exit"
-EOF
-					GREETER_CMD="sway --config /etc/greetd/sway-config"
-				fi
+				GREETER_CMD="cage -s -- gtkgreet${GTKGREET_STYLE} -c '${EXECUTE_CMD}'"
 			elif [ -n "${FLL_XSESSION}" ] && [ -x /usr/bin/tuigreet ]; then
 				TUITHEME="border=magenta;text=cyan;prompt=cyan;time=cyan;action=cyan;button=magenta;container=black;input=magenta"
 				GREETER_CMD="/usr/bin/tuigreet --greeting 'Welcome to ${FLL_DISTRO_NAME}'"

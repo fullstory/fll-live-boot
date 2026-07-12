@@ -1,6 +1,12 @@
 fll-live-boot (20260713.2) UNRELEASED; urgency=medium
 
+  [ Stefan Lippers-Hollmann ]
   * NOT RELEASED YET
+
+  [ Kel Modderman ]
+  * fll_desktop: host gtkgreet in cage alone. The greeter host
+    compositor is independent of the launched session, so one kiosk host
+    serves every spin; drops the sway fallback and its generated config.
 
  -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Mon, 13 Jul 2026 00:20:02 +0200
 
