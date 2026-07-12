@@ -326,12 +326,6 @@ EOF
 			# XKB_DEFAULT_* (the same helper calamares runs post-install).
 			[ -x /usr/libexec/aptosid-settings-hyprland/keyboard-env ] && \
 				/usr/libexec/aptosid-settings-hyprland/keyboard-env
-
-			# The passwordless (non-homed) user cannot unlock hyprlock; mask it.
-			if [ -e /run/fll/passwordless ] && \
-				[ -f /usr/lib/systemd/user/hypridle.service ]; then
-				systemctl --global mask hypridle.service
-			fi
 			;;
 		sway)
 			mkdir -p /etc/skel/.config/sway
