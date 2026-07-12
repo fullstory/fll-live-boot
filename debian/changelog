@@ -1,9 +1,5 @@
-fll-live-boot (20260713.1) UNRELEASED; urgency=medium
+fll-live-boot (20260713.1) unstable; urgency=medium
 
-  [ Stefan Lippers-Hollmann ]
-  * NOT RELEASED YET
-
-  [ Kel Modderman ]
   * fll_desktop: stop masking hypridle for the passwordless live user.
     hypridle's lock_cmd now self-guards on /run/fll/passwordless (in
     aptosid-settings-hyprland), so idle still powers the display off but
