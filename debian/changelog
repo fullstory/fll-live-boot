@@ -12,6 +12,8 @@ fll-live-boot (20260713.1) UNRELEASED; urgency=medium
     tuigreet is not installed. Use the full /usr/sbin/agreety path,
     since greetd runs the greeter through /bin/sh whose PATH omits
     /usr/sbin.
+  * fll_desktop: add gtkgreet as a greetd greeter, hosted in cage or
+    sway, ahead of tuigreet. Falls back to tuigreet, then agreety.
 
  -- Kel Modderman <kelvmod@gmail.com>  Mon, 13 Jul 2026 07:31:13 +1000
 
