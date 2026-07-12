@@ -101,6 +101,10 @@ EOF
 				GREETER_CMD="${GREETER_CMD} --power-shutdown 'systemctl -i poweroff'"
 				GREETER_CMD="${GREETER_CMD} --power-reboot 'systemctl -i reboot'"
 				GREETER_CMD="${GREETER_CMD} --cmd '${EXECUTE_CMD}' --theme '${TUITHEME}'"
+			else
+				# agreety: greetd's built-in text greeter, runs on the VT.
+				# Full path: greetd execs via /bin/sh whose PATH omits /usr/sbin.
+				GREETER_CMD="/usr/sbin/agreety --cmd '${EXECUTE_CMD}'"
 			fi
 
 			if [ -n "${GREETER_CMD}" ]; then

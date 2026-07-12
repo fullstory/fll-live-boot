@@ -1,4 +1,4 @@
-fll-live-boot (20260712.1) UNRELEASED; urgency=medium
+fll-live-boot (20260713.1) UNRELEASED; urgency=medium
 
   [ Stefan Lippers-Hollmann ]
   * NOT RELEASED YET
@@ -8,8 +8,12 @@ fll-live-boot (20260712.1) UNRELEASED; urgency=medium
     hypridle's lock_cmd now self-guards on /run/fll/passwordless (in
     aptosid-settings-hyprland), so idle still powers the display off but
     never locks a user who cannot unlock.
+  * fll_desktop: fall back to greetd's built-in agreety greeter when
+    tuigreet is not installed. Use the full /usr/sbin/agreety path,
+    since greetd runs the greeter through /bin/sh whose PATH omits
+    /usr/sbin.
 
- -- Kel Modderman <kelvmod@gmail.com>  Sun, 12 Jul 2026 12:47:52 +1000
+ -- Kel Modderman <kelvmod@gmail.com>  Mon, 13 Jul 2026 07:31:13 +1000
 
 fll-live-boot (20260711.1) unstable; urgency=medium
 
