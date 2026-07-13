@@ -369,19 +369,17 @@ for opt in $(cat /proc/cmdline); do
 	esac
 done
 
-# display managers should launch the uwsm-managed session when a
-# *-uwsm.desktop is provided (Hyprland, Sway, labwc), so the compositor runs
-# as a proper systemd session and picks up /etc/environment.d and
-# /etc/xdg/uwsm/env. FLL_XSESSION is left as-is for the skel config above;
-# only the session name handed to the display manager changes.
+# display managers should launch the uwsm-managed session whenever a
+# <session>-uwsm.desktop is shipped, so the compositor runs as a proper systemd
+# session and picks up /etc/environment.d and /etc/xdg/uwsm/env (and the socket-
+# activated pipewire/portals under graphical-session.target). Any session opts
+# in just by providing that variant -- Hyprland, Sway, labwc and cage kiosks
+# alike, with no per-compositor list to maintain here. FLL_XSESSION is left
+# as-is for the skel config above; only the display manager session changes.
 FLL_DM_SESSION="${FLL_XSESSION}"
-case "${FLL_XSESSION}" in
-	hyprland|sway|labwc)
-		if [ -f "/usr/share/wayland-sessions/${FLL_XSESSION}-uwsm.desktop" ]; then
-			FLL_DM_SESSION="${FLL_XSESSION}-uwsm"
-		fi
-		;;
-esac
+if [ -f "/usr/share/wayland-sessions/${FLL_XSESSION}-uwsm.desktop" ]; then
+	FLL_DM_SESSION="${FLL_XSESSION}-uwsm"
+fi
 
 # configure displaymanager
 for displaymanager in greetd slim lxdm lightdm gdm3 sddm; do

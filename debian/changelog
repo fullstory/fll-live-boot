@@ -7,6 +7,9 @@ fll-live-boot (20260713.2) UNRELEASED; urgency=medium
   * fll_desktop: host gtkgreet in cage alone. The greeter host
     compositor is independent of the launched session, so one kiosk host
     serves every spin; drops the sway fallback and its generated config.
+  * fll_desktop: prefer any <session>-uwsm.desktop for the display
+    manager session, not only hyprland/sway/labwc, so cage kiosk and
+    future uwsm-managed sessions need no change here.
 
  -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Mon, 13 Jul 2026 00:20:02 +0200
 
