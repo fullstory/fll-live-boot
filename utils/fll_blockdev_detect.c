@@ -46,6 +46,7 @@ static void setup_timeout_signal(unsigned int seconds)
 
 	sigemptyset(&sa.sa_mask);
 	sa.sa_handler = handle_timeout;
+	sa.sa_flags = 0;
 	sigaction(SIGALRM, &sa, NULL);
 
 	alarm(seconds);
