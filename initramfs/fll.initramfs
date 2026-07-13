@@ -34,6 +34,26 @@ fll_toram()
     return "${?}"
 }
 
+# Wait briefly for a device node to appear: the persist partition may still be
+# enumerating when the live-media event (which runs this script) fires.
+fll_wait_for_dev()
+{
+    _fll_tries=0
+    while [ ! -b "${1}" ] && [ "${_fll_tries}" -lt 10 ]; do
+        sleep 1
+        _fll_tries=$((_fll_tries + 1))
+    done
+    [ -b "${1}" ]
+}
+
+# Unmount the readonly rootfs and its backing block device, best-effort, so a
+# failed persist setup doesn't leave mounts behind blocking a retry.
+fll_cleanup_readonly_mounts()
+{
+    [ -n "${FLL_READONLY_MNT}" ] && umount "${FLL_READONLY_MNT}" 2>/dev/null
+    [ -n "${FLL_BLOCKDEV_MNT}" ] && umount "${FLL_BLOCKDEV_MNT}" 2>/dev/null
+}
+
 PATH=/usr/sbin:/usr/bin:/sbin:/bin
 
 if grep -qw -E 'fll[.=]debug' /proc/cmdline; then
@@ -241,6 +261,9 @@ if [ -n "${FLL_PERSIST_UUID}" ] && [ -n "${FLL_ROOTFS_UUID}" ]; then
         # encrypted persist: prompt for passphrase via Plymouth or console.
         # dracut hook stdin is not a tty so cryptsetup must be fed explicitly.
         FLL_PERSIST_LUKS_DEV="/dev/disk/by-uuid/${FLL_PERSIST_LUKS_UUID}"
+        # the persist partition may still be enumerating when the live-media
+        # event (which runs this script) fires
+        fll_wait_for_dev "${FLL_PERSIST_LUKS_DEV}"
         if [ -n "${FLL_PLYMOUTH}" ]; then
             for attempt in 1 2 3; do
                 plymouth ask-for-password \
@@ -253,16 +276,19 @@ if [ -n "${FLL_PERSIST_UUID}" ] && [ -n "${FLL_ROOTFS_UUID}" ]; then
         fi
         if [ $? -ne 0 ]; then
             echo "fll: error: could not unlock LUKS container (UUID=${FLL_PERSIST_LUKS_UUID})" >&2
+            fll_cleanup_readonly_mounts
             exit 1
         fi
         FLL_PERSIST_DEV="/dev/mapper/fll-persist"
     else
         FLL_PERSIST_DEV="/dev/disk/by-uuid/${FLL_PERSIST_UUID}"
+        fll_wait_for_dev "${FLL_PERSIST_DEV}"
     fi
     mkdir -p "${FLL_PERSIST_MNT}"
     if ! mount -n -o rw,noatime,subvolid=5 -t btrfs \
                "${FLL_PERSIST_DEV}" "${FLL_PERSIST_MNT}"; then
         echo "fll: error: could not mount persist btrfs (UUID=${FLL_PERSIST_UUID})" >&2
+        fll_cleanup_readonly_mounts
         exit 1
     fi
     # @root is the COW subvolume. Create the uuid-specific upper/work dirs
@@ -271,6 +297,7 @@ if [ -n "${FLL_PERSIST_UUID}" ] && [ -n "${FLL_ROOTFS_UUID}" ]; then
     mkdir -p "${FLL_UNION_COWDIR}/upper" "${FLL_UNION_COWDIR}/work"
 else
     if ! mount -n -t tmpfs -o size=90%,mode=755 tmpfs "${FLL_UNION_COWDIR}"; then
+        fll_cleanup_readonly_mounts
         exit 1
     fi
 fi
