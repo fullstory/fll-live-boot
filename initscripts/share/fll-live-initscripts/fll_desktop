@@ -170,10 +170,12 @@ setup_desktop() {
 				DESKTOP_FILE=$(find /usr/share/*sessions -type f -iname "${1}*.desktop" \
 					| sort | head -n 1)
 			fi
-			# failed to determine the "correct" desktop file from desktop= cheatcode
+			# failed to determine the "correct" desktop file from desktop= cheatcode.
+			# This script is sourced by fll_home, so exiting here would abort live
+			# user creation entirely; warn and keep the auto-detected session instead.
 			if [ ! -f "${DESKTOP_FILE}" ]; then
-				echo "fll_desktop: desktop session file not found for: ${1}"
-				exit 1
+				echo "fll_desktop: desktop session file not found for: ${1}, ignoring" >&2
+				return 0
 			fi
 			# update calamares
 			DESKTOP_EXEC=$(awk -F= '/^TryExec/{ print $2 }' "${DESKTOP_FILE}")
@@ -189,19 +191,22 @@ setup_desktop() {
 			;;
 	esac
 
-	FLL_XSESSION="$(basename ${DESKTOP_FILE%.desktop})"
+	# Determine FLL_XTYPE before committing FLL_XSESSION, so a bad desktop=
+	# cheatcode falls back to (rather than clobbers) the auto-detected session.
 	case "${DESKTOP_FILE}" in
 		/usr/share/xsessions/*)
-			FLL_XTYPE="x11"
+			DESKTOP_XTYPE="x11"
 			;;
 		/usr/share/wayland-sessions/*)
-			FLL_XTYPE="wayland"
+			DESKTOP_XTYPE="wayland"
 			;;
 		*)
-			echo "fll_desktop: unsupported desktop session: ${DESKTOP_FILE}"
-			exit 1
+			echo "fll_desktop: unsupported desktop session: ${DESKTOP_FILE}, ignoring" >&2
+			return 0
 			;;
 	esac
+	FLL_XSESSION="$(basename ${DESKTOP_FILE%.desktop})"
+	FLL_XTYPE="${DESKTOP_XTYPE}"
 
 	case "${FLL_XSESSION}" in
 		lxqt)
