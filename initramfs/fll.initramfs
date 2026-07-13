@@ -147,6 +147,14 @@ else
     # initramfs-tools
     FLL_ROOTFS_MNT="${rootmnt:-/root}"
 fi
+
+# Refuse to guess: without the cheatcode identifying which UUID this device
+# must match, an empty ID_FS_UUID below would match any filesystem.
+if [ -n "${FLL_FROMISO}" ] || [ -z "${FLL_PERSIST_UUID}" ]; then
+    [ -n "${FLL_ISO_UUID}" ] || exit 1
+else
+    [ -n "${FLL_ROOTFS_UUID}" ] || exit 1
+fi
 FLL_ISOMEDIA_MNT=""
 FLL_READONLY_MNT=""
 FLL_READONLY_FILE=""
@@ -159,7 +167,8 @@ if [ -n "${FLL_FROMISO}" ] || [ -z "${FLL_PERSIST_UUID}" ]; then
     mount -t "${ID_FS_TYPE}" -o ro "${DEVNAME}" "${FLL_BLOCKDEV_MNT}"
 
     # iso9660 filesystem on block device (cd/dvd/usb)
-    if [ "${ID_FS_UUID}" = "${FLL_ISO_UUID}" ] && [ -f "${FLL_BLOCKDEV_MNT}/${FLL_IMAGE_LOCATION}" ]; then
+    if [ -n "${ID_FS_UUID}" ] && [ "${ID_FS_UUID}" = "${FLL_ISO_UUID}" ] && \
+        [ -f "${FLL_BLOCKDEV_MNT}/${FLL_IMAGE_LOCATION}" ]; then
         FLL_ISOMEDIA_MNT="${FLL_BLOCKDEV_MNT}"
     # iso file on filesystem (fromiso=)
     elif [ -f "${FLL_BLOCKDEV_MNT}/${FLL_FROMISO#/}" ] && \
@@ -192,7 +201,7 @@ if [ -n "${FLL_FROMISO}" ] || [ -z "${FLL_PERSIST_UUID}" ]; then
 
     FLL_READONLY_FILE="${FLL_ISOMEDIA_MNT}/${FLL_IMAGE_LOCATION}"
     FLL_READONLY_FSTYPE="$(blkid -s TYPE -o value ${FLL_READONLY_FILE})"
-elif [ "${ID_FS_UUID}" = "${FLL_ROOTFS_UUID}" ]; then
+elif [ -n "${ID_FS_UUID}" ] && [ "${ID_FS_UUID}" = "${FLL_ROOTFS_UUID}" ]; then
     FLL_READONLY_MNT="/run/fll/${FLL_ROOTFS_UUID}"
     FLL_READONLY_FILE="${DEVNAME}"
     FLL_READONLY_FSTYPE="${ID_FS_TYPE}"
