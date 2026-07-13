@@ -202,7 +202,8 @@ export LANG
 
 # If no country code was specified, extract it from the resolved LANG
 # so that keyboard resolution below has a country to work with.
-if [ "$LANG_CODE" = "$COUNTRY_CODE" ] || [ -z "$COUNTRY_CODE" ]; then
+if [ "$(printf '%s' "$LANG_CODE" | tr '[:lower:]' '[:upper:]')" = "$COUNTRY_CODE" ] \
+	|| [ -z "$COUNTRY_CODE" ]; then
 	LANG_BASE="${LANG%%.*}"
 	COUNTRY_CODE="${LANG_BASE##*_}"
 fi
