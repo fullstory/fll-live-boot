@@ -46,25 +46,31 @@ EOF
 				[ -L /etc/lxdm/default.conf ] && [ ! -e "/etc/lxdm/${FLL_LIVE_USER}.conf" ]; then
 				rm -f /etc/lxdm/default.conf
 				sed "s/^# autologin=.*/&\nautologin=${FLL_LIVE_USER}/" \
-					"${1}/etc/lxdm/lxdm.conf" > "/etc/lxdm/${FLL_LIVE_USER}.conf"
+					/etc/lxdm/lxdm.conf > "/etc/lxdm/${FLL_LIVE_USER}.conf"
 				ln -fs "${FLL_LIVE_USER}.conf" /etc/lxdm/default.conf
 			fi
 			;;
 		sddm)
 			mkdir -p /etc/sddm.conf.d
+			SDDM_CONF="/etc/sddm.conf.d/${FLL_LIVE_USER}.conf"
 			if [ "${FLL_AUTOLOGIN}" = "yes" ]; then
-				printf "\n[Autologin]\nUser=${FLL_LIVE_USER}\nSession=${FLL_DM_SESSION}\nRelogin=true\n" \
-					>>"/etc/sddm.conf.d/${FLL_LIVE_USER}.conf"
+				grep -q '^\[Autologin\]' "${SDDM_CONF}" 2>/dev/null || \
+					printf "\n[Autologin]\nUser=${FLL_LIVE_USER}\nSession=${FLL_DM_SESSION}\nRelogin=true\n" \
+						>>"${SDDM_CONF}"
 			else
 				# encrypted homed home: no autologin; the greeter prompts for the
 				# password, which pam_systemd_home uses to unlock the home. The
 				# session comes from the home record (--session-launcher). Touch
 				# the file so the DisplayServer setting below has a target.
-				: >"/etc/sddm.conf.d/${FLL_LIVE_USER}.conf"
+				: >"${SDDM_CONF}"
 			fi
 
 			if [ "${FLL_XTYPE}" = "x11" ]; then
-				sed -i 's/^DisplayServer=.*/DisplayServer=x11/' /etc/sddm.conf.d/*.conf
+				if grep -q '^DisplayServer=' "${SDDM_CONF}"; then
+					sed -i 's/^DisplayServer=.*/DisplayServer=x11/' "${SDDM_CONF}"
+				else
+					printf '\n[General]\nDisplayServer=x11\n' >>"${SDDM_CONF}"
+				fi
 			fi
 			;;
 			slim)
@@ -124,7 +130,8 @@ EOF
 
 				# [initial_session] is greetd's autologin; omit it for an
 				# encrypted homed home so the greeter prompts to unlock.
-				if [ "${FLL_AUTOLOGIN}" = "yes" ]; then
+				if [ "${FLL_AUTOLOGIN}" = "yes" ] && \
+					! grep -q '^\[initial_session\]' /etc/greetd/config.toml; then
 					cat >> /etc/greetd/config.toml <<EOF
 
 [initial_session]
@@ -139,7 +146,7 @@ EOF
 
 setup_desktop() {
 	# This function may be called twice for the same desktop if user
-	# supplied a desktop= cheatcode - everything below must be imdepotent
+	# supplied a desktop= cheatcode - everything below must be idempotent
 	case "${1}" in
 		*.desktop)
 			DESKTOP_FILE="${1}"
