@@ -124,7 +124,10 @@ EOF
 			fi
 
 			if [ -n "${GREETER_CMD}" ]; then
-				sed -i "s#^command = \".*\"#command = \"${GREETER_CMD}\"#" \
+				# Only the first command line (default_session); the
+				# appended [initial_session] command below is the real
+				# session and must survive a second run (persist media).
+				sed -i "0,/^command = \".*\"/s#^command = \".*\"#command = \"${GREETER_CMD}\"#" \
 					/etc/greetd/config.toml
 
 				# [initial_session] is greetd's autologin; omit it for an

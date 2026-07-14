@@ -53,6 +53,10 @@ fll-live-boot (20260714.1) UNRELEASED; urgency=medium
     and fll-live-initscripts-networkd-dummy.postinst still had the older
     version that missed nspawn --as-pid2 builds, fixed elsewhere in
     8d69b232 but never propagated here
+  * fll_desktop: make the greetd default_session rewrite idempotent -
+    anchor the sed to the first command line so a second run on persist
+    media no longer overwrites the appended [initial_session] autologin
+    command with the greeter command.
 
  -- Kel Modderman <kelvmod@gmail.com>  Tue, 14 Jul 2026 20:15:02 +1000
 
