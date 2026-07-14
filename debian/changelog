@@ -48,6 +48,11 @@ fll-live-boot (20260714.1) UNRELEASED; urgency=medium
   * fll-live-initscripts.postrm: drop the dead rm -f /etc/default/fll-
     locales, nothing creates that file anymore
   * fll-snakeoil-cert.service: drop a trailing blank line
+  * unify chrooted() across all four maintainer scripts to the already-
+    fixed variant (container= env var check); distro-defaults.postinst
+    and fll-live-initscripts-networkd-dummy.postinst still had the older
+    version that missed nspawn --as-pid2 builds, fixed elsewhere in
+    8d69b232 but never propagated here
 
  -- Kel Modderman <kelvmod@gmail.com>  Tue, 14 Jul 2026 20:15:02 +1000
 
