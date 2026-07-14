@@ -24,6 +24,12 @@ fll-live-boot (20260714.1) UNRELEASED; urgency=medium
     files, the initramfs-tools hook/script and the dracut module script;
     fix a type->command -v bashism this exposed in fll.initramfs;
     annotate fll_homectl's intentional STORAGE_ARGS word-split
+  * fll.initramfs: fix fll_say printf-format misuse, force mkdir modes
+    with chmod (mkdir -p -m is a no-op on an existing dir), add -p and
+    failure messages to toram mkdir, capture LUKS unlock status
+    explicitly, and validate username=/hostname= cheatcodes before use;
+    fix the same jq string-interpolation bug in fll_homectl and
+    fll_login (use jq --arg)
 
  -- Kel Modderman <kelvmod@gmail.com>  Tue, 14 Jul 2026 20:15:02 +1000
 

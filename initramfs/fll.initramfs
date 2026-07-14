@@ -21,9 +21,9 @@
 fll_say()
 {
     if [ -n "${FLL_PLYMOUTH}" ]; then
-        plymouth display-message --text="${@}"
+        plymouth display-message --text="${*}"
     else
-        printf "${@}"
+        printf '%s\n' "${*}"
     fi
 }
 
@@ -117,6 +117,12 @@ for opt in $(cat /proc/cmdline); do
             ;;
         hostname=*)
             FLL_CUSTOM_HOSTNAME="${opt#hostname=}"
+            case "${FLL_CUSTOM_HOSTNAME}" in
+                *[!a-zA-Z0-9.-]*|"")
+                    echo "fll: warning: ignoring invalid hostname= cheatcode: ${FLL_CUSTOM_HOSTNAME}" >&2
+                    FLL_CUSTOM_HOSTNAME=""
+                    ;;
+            esac
             ;;
         image_dir=*)
             FLL_IMAGE_DIR="${opt#image_dir=}"
@@ -149,7 +155,17 @@ for opt in $(cat /proc/cmdline); do
             FLL_CUSTOM_TZ="${opt#tz=}"
             ;;
         username=*)
-            FLL_LIVE_USER="${opt#username=}"
+            # Keep the /etc/default/distro default on an invalid value,
+            # rather than clobbering it with something unsafe to use in
+            # the sed/jq/source calls below.
+            case "${opt#username=}" in
+                *[!a-z0-9_-]*|"")
+                    echo "fll: warning: ignoring invalid username= cheatcode: ${opt#username=}" >&2
+                    ;;
+                *)
+                    FLL_LIVE_USER="${opt#username=}"
+                    ;;
+            esac
             ;;
         utc=yes)
             UTC="yes"
@@ -205,16 +221,18 @@ if [ -n "${FLL_FROMISO}" ] || [ -z "${FLL_PERSIST_UUID}" ]; then
     if [ "${FLL_COPY_TORAM}" = "yes" ]; then
         mkdir -p /run/fll/toram
         if mount -n -t tmpfs -o size=90% tmpfs /run/fll/toram; then
-            mkdir /run/fll/toram/"${FLL_IMAGE_DIR}"
+            mkdir -p /run/fll/toram/"${FLL_IMAGE_DIR}"
             if fll_toram "${FLL_ISOMEDIA_MNT}/${FLL_IMAGE_LOCATION}" /run/fll/toram/"${FLL_IMAGE_LOCATION}"; then
                 grep -qw "${FLL_ISOMEDIA_MNT}" /proc/mounts && umount -l "${FLL_ISOMEDIA_MNT}"
                 grep -qw "${FLL_BLOCKDEV_MNT}" /proc/mounts && umount -l "${FLL_BLOCKDEV_MNT}"
                 FLL_ISOMEDIA_MNT=/run/fll/toram
             else
+                fll_say "toram copy failed, continuing from the original media"
                 umount /run/fll/toram
                 rmdir /run/fll/toram
             fi
         else
+            fll_say "toram: could not mount tmpfs, continuing from the original media"
             rmdir /run/fll/toram
         fi
     fi
@@ -230,14 +248,16 @@ elif [ -n "${ID_FS_UUID}" ] && [ "${ID_FS_UUID}" = "${FLL_ROOTFS_UUID}" ]; then
     if [ "${FLL_COPY_TORAM}" = "yes" ]; then
         mkdir -p /run/fll/toram
         if mount -n -t tmpfs -o size=90% tmpfs /run/fll/toram; then
-            mkdir /run/fll/toram/"${FLL_IMAGE_DIR}"
+            mkdir -p /run/fll/toram/"${FLL_IMAGE_DIR}"
             if fll_toram "${FLL_READONLY_FILE}" /run/fll/toram/"${FLL_IMAGE_LOCATION}"; then
                 FLL_READONLY_FILE=/run/fll/toram/"${FLL_IMAGE_LOCATION}"
             else
+                fll_say "toram copy failed, continuing from the original media"
                 umount /run/fll/toram
                 rmdir /run/fll/toram
             fi
         else
+            fll_say "toram: could not mount tmpfs, continuing from the original media"
             rmdir /run/fll/toram
         fi
     fi
@@ -264,17 +284,20 @@ if [ -n "${FLL_PERSIST_UUID}" ] && [ -n "${FLL_ROOTFS_UUID}" ]; then
         # the persist partition may still be enumerating when the live-media
         # event (which runs this script) fires
         fll_wait_for_dev "${FLL_PERSIST_LUKS_DEV}"
+        luks_unlocked=1
         if [ -n "${FLL_PLYMOUTH}" ]; then
             for attempt in 1 2 3; do
                 plymouth ask-for-password \
                     --prompt="Enter passphrase for persist LUKS (UUID=${FLL_PERSIST_LUKS_UUID}) [attempt ${attempt}/3]" \
-                    | cryptsetup luksOpen --key-file=- "${FLL_PERSIST_LUKS_DEV}" fll-persist \
-                    && break
+                    | cryptsetup luksOpen --key-file=- "${FLL_PERSIST_LUKS_DEV}" fll-persist
+                luks_unlocked="${?}"
+                [ "${luks_unlocked}" -eq 0 ] && break
             done
         else
             cryptsetup luksOpen --tries=3 "${FLL_PERSIST_LUKS_DEV}" fll-persist < /dev/console
+            luks_unlocked="${?}"
         fi
-        if [ $? -ne 0 ]; then
+        if [ "${luks_unlocked}" -ne 0 ]; then
             echo "fll: error: could not unlock LUKS container (UUID=${FLL_PERSIST_LUKS_UUID})" >&2
             fll_cleanup_readonly_mounts
             exit 1
@@ -382,12 +405,17 @@ if [ -d "${FLL_ROOTFS_MNT}/etc/calamares" ]; then
 fi
 
 # prepare /dev /media /proc and /sys
+# -m only applies to a directory mkdir -p actually creates, not one that
+# already exists (likely here, coming from the base rootfs image); chmod
+# explicitly to guarantee the mode regardless.
 for dir in dev media proc run sys; do
-    mkdir -p -m 0755 "${FLL_ROOTFS_MNT}/${dir}"
+    mkdir -p "${FLL_ROOTFS_MNT}/${dir}"
+    chmod 0755 "${FLL_ROOTFS_MNT}/${dir}"
 done
 
 # tmp with correct permissions for users
-mkdir -p -m 1777 "${FLL_ROOTFS_MNT}/tmp"
+mkdir -p "${FLL_ROOTFS_MNT}/tmp"
+chmod 1777 "${FLL_ROOTFS_MNT}/tmp"
 
 # keep the systemd journal in RAM for the live session
 mkdir -p "${FLL_ROOTFS_MNT}/etc/systemd/journald.conf.d"
