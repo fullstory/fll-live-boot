@@ -17,6 +17,9 @@ fll-live-boot (20260713.2) UNRELEASED; urgency=medium
   * fll_desktop: prevent an invalid/unmatched desktop= cheatcode from
     aborting live user creation and falling back to defaults.
   * fll_login: correctly localise prompt.
+  * fll.initramfs: append keyscript=/bin/cat to calamares'
+    crypttabOptions only on initramfs-tools media, matching Calamares'
+    own LUKS docs (dracut needs no such option)
 
  -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Mon, 13 Jul 2026 00:20:02 +0200
 
