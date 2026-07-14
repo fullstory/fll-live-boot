@@ -13,4 +13,3 @@ ExecStart=/usr/sbin/make-ssl-cert generate-default-snakeoil --force-overwrite
 
 [Install]
 WantedBy=multi-user.target
-

@@ -45,6 +45,9 @@ fll-live-boot (20260714.1) UNRELEASED; urgency=medium
     fll_session_passwordless
   * drop libblkid-dev build-dep: fll_blockdev_detect.c never used it
     (blkid usages elsewhere are the util-linux command, not the library)
+  * fll-live-initscripts.postrm: drop the dead rm -f /etc/default/fll-
+    locales, nothing creates that file anymore
+  * fll-snakeoil-cert.service: drop a trailing blank line
 
  -- Kel Modderman <kelvmod@gmail.com>  Tue, 14 Jul 2026 20:15:02 +1000
 

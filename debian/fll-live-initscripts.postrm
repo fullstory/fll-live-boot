@@ -33,7 +33,6 @@ set -e
 
 case "$1" in
 	remove|purge)
-		rm -f /etc/default/fll-locales
 		# fll-live-initramfs may have created this file
 		rm -f /etc/udev/rules.d/70-fll-live.rules
 		;;
