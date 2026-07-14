@@ -9,7 +9,6 @@ Build-Depends: debhelper-compat (= 13),
  devscripts,
  gengetopt,
  pkgconf,
- libblkid-dev,
  libudev-dev
 Standards-Version: 4.7.0
 Vcs-Browser: https://github.com/fullstory/fll-live-boot

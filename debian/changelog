@@ -43,6 +43,8 @@ fll-live-boot (20260714.1) UNRELEASED; urgency=medium
     LDFLAGS from the compile-only rule; add .PHONY
   * fll-live-initscripts: depend on sudo, genuinely used (as -u) by
     fll_session_passwordless
+  * drop libblkid-dev build-dep: fll_blockdev_detect.c never used it
+    (blkid usages elsewhere are the util-linux command, not the library)
 
  -- Kel Modderman <kelvmod@gmail.com>  Tue, 14 Jul 2026 20:15:02 +1000
 
