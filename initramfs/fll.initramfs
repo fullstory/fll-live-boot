@@ -88,7 +88,7 @@ FLL_PERSIST_UUID=""
 FLL_PERSIST_LUKS_UUID=""
 FLL_PLYMOUTH=""
 
-if type plymouth > /dev/null 2>&1 && plymouth --ping; then
+if command -v plymouth > /dev/null 2>&1 && plymouth --ping; then
     FLL_PLYMOUTH="yes"
 fi
 

@@ -80,6 +80,8 @@ case "${HOMECTL_STATE}" in
 		# First boot: no home yet. homectl auto-generates a signing keypair
 		# into the key dir, signs the record once, and embeds it in the home.
 		# The password is prompted via the systemd password agent (Plymouth).
+		# shellcheck disable=SC2086 # STORAGE_ARGS is a deliberately unquoted,
+		# space-separated list of flags meant to be word-split here.
 		homectl create "${FLL_LIVE_USER}" \
 				--real-name="${FLL_LIVE_USER}" \
 				--member-of="${FLL_LIVE_USER_GROUPS}" \

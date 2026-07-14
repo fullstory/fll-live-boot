@@ -1,5 +1,8 @@
 DIRS := utils
-LINT := $(wildcard initscripts/share/fll-live-initscripts/fll_*) utils/fll_login
+LINT := $(wildcard initscripts/share/fll-live-initscripts/fll_*) utils/fll_login \
+	initramfs/fll.initramfs initramfs/fll.shutdown initscripts/fll.shutdown \
+	initramfs/initramfs-tools/hooks/fll initramfs/initramfs-tools/scripts/fll \
+	initramfs/dracut/modules.d/70fll/fll.sh
 
 all: $(DIRS:%=all-%)
 all-%:

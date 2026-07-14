@@ -1,4 +1,4 @@
-fll-live-boot (20260713.2) UNRELEASED; urgency=medium
+fll-live-boot (20260714.1) UNRELEASED; urgency=medium
 
   [ Stefan Lippers-Hollmann ]
   * NOT RELEASED YET
@@ -20,8 +20,12 @@ fll-live-boot (20260713.2) UNRELEASED; urgency=medium
   * fll.initramfs: append keyscript=/bin/cat to calamares'
     crypttabOptions only on initramfs-tools media, matching Calamares'
     own LUKS docs (dracut needs no such option)
+  * extend Makefile LINT coverage to fll.initramfs, both fll.shutdown
+    files, the initramfs-tools hook/script and the dracut module script;
+    fix a type->command -v bashism this exposed in fll.initramfs;
+    annotate fll_homectl's intentional STORAGE_ARGS word-split
 
- -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Mon, 13 Jul 2026 00:20:02 +0200
+ -- Kel Modderman <kelvmod@gmail.com>  Tue, 14 Jul 2026 20:15:02 +1000
 
 fll-live-boot (20260713.1) unstable; urgency=medium
 
