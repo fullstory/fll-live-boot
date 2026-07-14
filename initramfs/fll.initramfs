@@ -46,11 +46,20 @@ fll_wait_for_dev()
     [ -b "${1}" ]
 }
 
-# Unmount the readonly rootfs and its backing block device, best-effort, so a
-# failed persist setup doesn't leave mounts behind blocking a retry.
-fll_cleanup_readonly_mounts()
+# Best-effort teardown of every mount/mapper this script may have set up, in
+# reverse dependency order, so a failed setup doesn't leave state behind that
+# blocks a retry or stalls boot to the media-detection timeout. Each step is
+# guarded and silenced: unset vars and not-mounted targets are no-ops.
+fll_cleanup_mounts()
 {
+    [ -n "${FLL_ROOTFS_MNT}" ] && umount "${FLL_ROOTFS_MNT}/home" 2>/dev/null
+    [ -n "${FLL_ROOTFS_MNT}" ] && umount "${FLL_ROOTFS_MNT}" 2>/dev/null
+    [ -n "${FLL_UNION_COWDIR}" ] && umount "${FLL_UNION_COWDIR}" 2>/dev/null
+    [ -n "${FLL_PERSIST_MNT}" ] && umount "${FLL_PERSIST_MNT}" 2>/dev/null
+    [ -n "${FLL_PERSIST_LUKS_UUID}" ] && [ -b /dev/mapper/fll-persist ] && \
+        cryptsetup luksClose fll-persist 2>/dev/null
     [ -n "${FLL_READONLY_MNT}" ] && umount "${FLL_READONLY_MNT}" 2>/dev/null
+    [ -n "${FLL_ISOMEDIA_MNT}" ] && umount "${FLL_ISOMEDIA_MNT}" 2>/dev/null
     [ -n "${FLL_BLOCKDEV_MNT}" ] && umount "${FLL_BLOCKDEV_MNT}" 2>/dev/null
 }
 
@@ -268,6 +277,7 @@ fi
 # mount readonly rootfs
 mkdir -p "${FLL_READONLY_MNT}"
 if ! mount -t "${FLL_READONLY_FSTYPE}" -o ro "${FLL_READONLY_FILE}" "${FLL_READONLY_MNT}"; then
+    fll_cleanup_mounts
     exit 1
 fi
 
@@ -299,7 +309,7 @@ if [ -n "${FLL_PERSIST_UUID}" ] && [ -n "${FLL_ROOTFS_UUID}" ]; then
         fi
         if [ "${luks_unlocked}" -ne 0 ]; then
             echo "fll: error: could not unlock LUKS container (UUID=${FLL_PERSIST_LUKS_UUID})" >&2
-            fll_cleanup_readonly_mounts
+            fll_cleanup_mounts
             exit 1
         fi
         FLL_PERSIST_DEV="/dev/mapper/fll-persist"
@@ -311,7 +321,7 @@ if [ -n "${FLL_PERSIST_UUID}" ] && [ -n "${FLL_ROOTFS_UUID}" ]; then
     if ! mount -n -o rw,noatime,subvolid=5 -t btrfs \
                "${FLL_PERSIST_DEV}" "${FLL_PERSIST_MNT}"; then
         echo "fll: error: could not mount persist btrfs (UUID=${FLL_PERSIST_UUID})" >&2
-        fll_cleanup_readonly_mounts
+        fll_cleanup_mounts
         exit 1
     fi
     # @root is the COW subvolume. Create the uuid-specific upper/work dirs
@@ -320,7 +330,7 @@ if [ -n "${FLL_PERSIST_UUID}" ] && [ -n "${FLL_ROOTFS_UUID}" ]; then
     mkdir -p "${FLL_UNION_COWDIR}/upper" "${FLL_UNION_COWDIR}/work"
 else
     if ! mount -n -t tmpfs -o size=90%,mode=755 tmpfs "${FLL_UNION_COWDIR}"; then
-        fll_cleanup_readonly_mounts
+        fll_cleanup_mounts
         exit 1
     fi
 fi
@@ -329,6 +339,7 @@ FLL_UNION_OPTIONS="lowerdir=${FLL_READONLY_MNT},upperdir=${FLL_UNION_COWDIR}/upp
 modprobe overlay
 mkdir -p "${FLL_UNION_COWDIR}/upper" "${FLL_UNION_COWDIR}/work"
 if ! mount -t overlay -o "${FLL_UNION_OPTIONS}" overlay "${FLL_ROOTFS_MNT}"; then
+    fll_cleanup_mounts
     exit 1
 fi
 
@@ -337,6 +348,7 @@ if [ -n "${FLL_PERSIST_UUID}" ] && [ -n "${FLL_ROOTFS_UUID}" ]; then
     mkdir -p "${FLL_ROOTFS_MNT}/home"
     if ! mount -n --bind "${FLL_PERSIST_MNT}/@home" "${FLL_ROOTFS_MNT}/home"; then
         echo "fll: error: could not bind-mount @home subvolume" >&2
+        fll_cleanup_mounts
         exit 1
     fi
 fi

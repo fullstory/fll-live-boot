@@ -57,6 +57,13 @@ fll-live-boot (20260714.1) UNRELEASED; urgency=medium
     anchor the sed to the first command line so a second run on persist
     media no longer overwrites the appended [initial_session] autologin
     command with the greeter command.
+  * fll.initramfs: on every live-media setup failure, tear down all
+    mounts and the LUKS mapper we opened (generalised
+    fll_cleanup_mounts). Previously the readonly-rootfs, overlay and
+    @home-bind failure exits left mounts behind, and the persist-btrfs
+    failure exit left the unlocked fll-persist mapper open - leaked
+    state that stalled boot to the media-detection timeout or blocked a
+    retry.
 
  -- Kel Modderman <kelvmod@gmail.com>  Tue, 14 Jul 2026 20:15:02 +1000
 
