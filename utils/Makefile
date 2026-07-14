@@ -1,11 +1,8 @@
 CFLAGS ?= -O2 -g -Wall
 LIBS_UDEV = $(shell pkg-config --libs libudev)
-LIBS_BLKID = $(shell pkg-config --libs blkid)
-ifdef USE_LIBPIPELINE
-LIBS_PIPELINE = $(shell pkg-config --libs libpipeline)
-CFLAGS += -DUSE_LIBPIPELINE
-endif
 PROGS = fll_blockdev_detect
+
+.PHONY: all clean
 
 all: $(PROGS)
 
@@ -14,10 +11,10 @@ fll_blockdev_cmdline.c: fll_blockdev_detect.ggo
 		  --unamed-opts=ARGS
 
 fll_blockdev_cmdline.o: fll_blockdev_cmdline.c
-	$(CC) $(CFLAGS) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -c -o $@ $<
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c -o $@ $<
 
 fll_blockdev_detect: fll_blockdev_cmdline.o
-	$(CC) $(CFLAGS) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) $< -o $@ $@.c $(LIBS_UDEV) $(LIBS_PIPELINE)
+	$(CC) $(CFLAGS) $(CPPFLAGS) $(LDFLAGS) $< -o $@ $@.c $(LIBS_UDEV)
 
 clean:
 	$(RM) $(PROGS) *_cmdline.*

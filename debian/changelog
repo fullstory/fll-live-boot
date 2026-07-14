@@ -38,6 +38,11 @@ fll-live-boot (20260714.1) UNRELEASED; urgency=medium
     daemon.conf, quote the fragile greetd sed, which->command -v (also
     fll_login); fll_homectl: handle active state in the already-exists
     branch instead of falling through to homectl create
+  * utils/Makefile: drop dead LIBS_BLKID/USE_LIBPIPELINE machinery
+    (unused in the C source), CXXFLAGS from C compile/link rules,
+    LDFLAGS from the compile-only rule; add .PHONY
+  * fll-live-initscripts: depend on sudo, genuinely used (as -u) by
+    fll_session_passwordless
 
  -- Kel Modderman <kelvmod@gmail.com>  Tue, 14 Jul 2026 20:15:02 +1000
 
