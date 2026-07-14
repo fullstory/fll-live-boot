@@ -34,7 +34,7 @@ read nothing
 
 # There will be a password (or equivalent factor) for a user with an active or
 # inactive (but blessed by system) home. Fallback to passwordless login.
-if [ -x "$(which homectl)" ]; then
+if command -v homectl >/dev/null 2>&1; then
 	HOMECTL_STATE="absent"
 	HOMECTL=$(homectl list -EE | jq --arg name "${FLL_LIVE_USER}" '.[] | select(.name==$name)')
 	if [ -n "${HOMECTL}" ]; then

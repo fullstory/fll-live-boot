@@ -64,7 +64,7 @@ if [ -n "${HOMECTL}" ]; then
 fi
 
 case "${HOMECTL_STATE}" in
-	fixating*|unfixated|inactive)
+	active|fixating*|unfixated|inactive)
 		# A home for this user already exists and its record verifies against
 		# the restored keypair. There is nothing to change, so don't update it
 		# (needless re-sign churn). For an encrypted (luks) home, leave it

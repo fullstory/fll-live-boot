@@ -11,8 +11,7 @@ setup_displaymanager() {
 					-e "/^TimedLoginEnable\=.*/d" \
 					-e "/^TimedLogin\=.*/d" \
 					-e "/^TimedLoginDelay\=.*/d" \
-					-e "s/^\(\[daemon\]$\)/\1\nAutomaticLogin\=${FLL_LIVE_USER}\nAutomaticLoginEnable\=true\n \
-						\nTimedLoginEnable\=true\nTimedLogin\=${FLL_LIVE_USER}\nTimedLoginDelay\=1/" \
+					-e "s/^\(\[daemon\]$\)/\1\nAutomaticLogin\=${FLL_LIVE_USER}\nAutomaticLoginEnable\=true\nTimedLoginEnable\=true\nTimedLogin\=${FLL_LIVE_USER}\nTimedLoginDelay\=1/" \
 						/etc/gdm3/daemon.conf
 			fi
 
@@ -125,7 +124,7 @@ EOF
 			fi
 
 			if [ -n "${GREETER_CMD}" ]; then
-				sed -i "s#^command = ".*"#command = \"${GREETER_CMD}\"#" \
+				sed -i "s#^command = \".*\"#command = \"${GREETER_CMD}\"#" \
 					/etc/greetd/config.toml
 
 				# [initial_session] is greetd's autologin; omit it for an
@@ -395,7 +394,7 @@ fi
 
 # configure displaymanager
 for displaymanager in greetd slim lxdm lightdm gdm3 sddm; do
-	[ -x "$(which ${displaymanager})" ] || continue
+	command -v "${displaymanager}" >/dev/null 2>&1 || continue
 	echo "Configuring ${displaymanager}..."
 	setup_displaymanager "${displaymanager}"
 done

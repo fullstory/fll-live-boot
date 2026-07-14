@@ -34,6 +34,10 @@ fll-live-boot (20260714.1) UNRELEASED; urgency=medium
     capture, ln -sf for idempotency; parameterize stop_debug_log's mount
     point in both the dracut and initramfs-tools copies so they stay
     byte-identical
+  * fll_desktop: fix gdm3 sed injecting a stray whitespace/tab line into
+    daemon.conf, quote the fragile greetd sed, which->command -v (also
+    fll_login); fll_homectl: handle active state in the already-exists
+    branch instead of falling through to homectl create
 
  -- Kel Modderman <kelvmod@gmail.com>  Tue, 14 Jul 2026 20:15:02 +1000
 
