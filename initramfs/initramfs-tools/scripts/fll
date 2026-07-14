@@ -30,6 +30,9 @@ init_debug_log()
     set -x
 }
 
+# $1 is the mount point to save debug.log under (kept identical to the
+# dracut/modules.d/70fll/fll.sh copy of this function; only the caller-side
+# variable holding the mount point differs between the two hook systems).
 stop_debug_log()
 {
     [ -f debug.log.pid ] || return 0
@@ -37,9 +40,9 @@ stop_debug_log()
     exec 1>&6 6>&-
     exec 2>&7 7>&-
     kill "$(cat debug.log.pid)"
-    if [ -d "${rootmnt}/var/log" ]; then
-        mkdir -p "${rootmnt}/var/log/fll"
-        cp debug.log "${rootmnt}/var/log/fll"
+    if [ -d "${1}/var/log" ]; then
+        mkdir -p "${1}/var/log/fll"
+        cp debug.log "${1}/var/log/fll"
     fi
 }
 
@@ -77,7 +80,7 @@ mountroot()
     log_end_msg
 
     # stop logging
-    stop_debug_log
+    stop_debug_log "${rootmnt}"
     # final debug checkpoint
     maybe_break fll-bottom
 

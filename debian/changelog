@@ -30,6 +30,10 @@ fll-live-boot (20260714.1) UNRELEASED; urgency=medium
     explicitly, and validate username=/hostname= cheatcodes before use;
     fix the same jq string-interpolation bug in fll_homectl and
     fll_login (use jq --arg)
+  * dracut fll.sh: set FLL_RC=0 directly instead of an indirect $?
+    capture, ln -sf for idempotency; parameterize stop_debug_log's mount
+    point in both the dracut and initramfs-tools copies so they stay
+    byte-identical
 
  -- Kel Modderman <kelvmod@gmail.com>  Tue, 14 Jul 2026 20:15:02 +1000
 

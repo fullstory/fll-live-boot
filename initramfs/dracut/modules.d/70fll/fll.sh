@@ -24,6 +24,9 @@ init_debug_log()
     set -x
 }
 
+# $1 is the mount point to save debug.log under (kept identical to the
+# initramfs-tools/scripts/fll copy of this function; only the caller-side
+# variable holding the mount point differs between the two hook systems).
 stop_debug_log()
 {
     [ -f debug.log.pid ] || return 0
@@ -31,20 +34,20 @@ stop_debug_log()
     exec 1>&6 6>&-
     exec 2>&7 7>&-
     kill "$(cat debug.log.pid)"
-    if [ -d "${NEWROOT}/var/log" ]; then
-        mkdir -p "${NEWROOT}/var/log/fll"
-        cp debug.log "${NEWROOT}/var/log/fll"
+    if [ -d "${1}/var/log" ]; then
+        mkdir -p "${1}/var/log/fll"
+        cp debug.log "${1}/var/log/fll"
     fi
 }
 
 unset FLL_RC
 init_debug_log
 if fll_blockdev_detect --monitor --execp=/sbin/fll; then
-    FLL_RC="${?}"
-    ln -s null /dev/root
+    FLL_RC=0
+    ln -sf null /dev/root
     : > /run/initramfs/.need_shutdown
 else
     echo "$0: fll_blockdev_detect failed to mount live media!"
 fi
-stop_debug_log
+stop_debug_log "${NEWROOT}"
 exit "${FLL_RC:-1}"
