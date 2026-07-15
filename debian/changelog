@@ -1,3 +1,9 @@
+fll-live-boot (20260715.2) UNRELEASED; urgency=medium
+
+  * NOT RELEASED YET
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Wed, 15 Jul 2026 23:16:14 +0200
+
 fll-live-boot (20260715.1) unstable; urgency=medium
 
   * fll_sshd: new fll-live-initscripts oneshot providing non-root SSH
