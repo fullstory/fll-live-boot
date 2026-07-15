@@ -1,9 +1,5 @@
-fll-live-boot (20260715.1) UNRELEASED; urgency=medium
+fll-live-boot (20260715.1) unstable; urgency=medium
 
-  [ Stefan Lippers-Hollmann ]
-  * NOT RELEASED YET
-
-  [ Kel Modderman ]
   * fll_sshd: new fll-live-initscripts oneshot providing non-root SSH
     access on the live media. Gated (ConditionPathExists) on a public
     key baked to /var/lib/fll/ssh_authorized_keys by pyfll's
