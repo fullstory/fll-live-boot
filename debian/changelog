@@ -1,8 +1,21 @@
-fll-live-boot (20260714.2) UNRELEASED; urgency=medium
+fll-live-boot (20260715.1) UNRELEASED; urgency=medium
 
+  [ Stefan Lippers-Hollmann ]
   * NOT RELEASED YET
 
- -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Wed, 15 Jul 2026 00:07:59 +0200
+  [ Kel Modderman ]
+  * fll_sshd: new fll-live-initscripts oneshot providing non-root SSH
+    access on the live media. Gated (ConditionPathExists) on a public
+    key baked to /var/lib/fll/ssh_authorized_keys by pyfll's
+    ssh_authorized_keys option; it installs the key as the live user's
+    authorized_keys (0700/0600) and starts the otherwise-disabled sshd.
+    Root stays out of scope.
+  * fll-live-initscripts.postrm: on remove/purge, clean up the pyfll-
+    baked /var/lib/fll/ssh_authorized_keys (and /var/lib/fll if empty) -
+    it isn't dpkg-shipped, so dpkg won't remove it (matters when fll-
+    live-initscripts is purged on a Calamares install).
+
+ -- Kel Modderman <kelvmod@gmail.com>  Wed, 15 Jul 2026 18:09:12 +1000
 
 fll-live-boot (20260714.1) unstable; urgency=medium
 

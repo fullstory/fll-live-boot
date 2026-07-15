@@ -35,6 +35,10 @@ case "$1" in
 	remove|purge)
 		# fll-live-initramfs may have created this file
 		rm -f /etc/udev/rules.d/70-fll-live.rules
+		# pyfll bakes the live-media SSH pubkey here (not dpkg-shipped, so
+		# dpkg won't remove it); clean it up, and the dir if now empty.
+		rm -f /var/lib/fll/ssh_authorized_keys
+		rmdir /var/lib/fll 2>/dev/null || true
 		;;
 	upgrade|failed-upgrade|disappear)
 		;;
