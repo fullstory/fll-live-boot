@@ -7,8 +7,12 @@ fll-live-boot (20260718.1) UNRELEASED; urgency=medium
   * fll.initramfs: key the persist COW dir by image_file (stable across
     rebuilds) instead of rootfs_uuid (random per build), so an upgrade
     can carry /etc forward into the same per-flavour dir.
+  * fll_sshd: run only on the first pristine boot, gated on absence of
+    the host key. Host keys and authorized_keys now persist via /etc, so
+    enable sshd to autostart on later boots instead of regenerating host
+    keys (slow on early boot) every time.
 
- -- Kel Modderman <kelvmod@gmail.com>  Sat, 18 Jul 2026 12:28:41 +1000
+ -- Kel Modderman <kelvmod@gmail.com>  Sat, 18 Jul 2026 19:22:15 +1000
 
 fll-live-boot (20260715.1) unstable; urgency=medium
 

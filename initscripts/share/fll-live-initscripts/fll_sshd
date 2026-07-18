@@ -1,15 +1,10 @@
 #!/bin/sh
 # fll_sshd - provision non-root SSH access to the live user.
 #
-# Gated by fll-sshd.service (ConditionPathExists=/var/lib/fll/ssh_authorized_keys),
-# so this runs only when pyfll baked a public key in via its ssh_authorized_keys=
-# option. It installs that key as the live user's authorized_keys and starts
-# sshd. Root is out of scope - sshd keeps its PermitRootLogin prohibit-password
-# default, and the live media's own sudo/sshstart cover privileged access.
-#
-# Outcome is reported through the service's exit status: any failed step aborts
-# (set -e), marking the unit failed for systemctl status / journalctl -u fll-sshd;
-# on success a single breadcrumb line is logged to the journal.
+# fll-sshd.service gates this to the first pristine boot (baked key present, host
+# keys not yet generated). It installs the key, generates host keys, and enables
+# sshd; both persist via /etc, so later boots skip the unit and sshd autostarts.
+# Root stays out of scope (sshd prohibit-password; sudo/sshstart cover privilege).
 
 set -e
 
@@ -31,11 +26,13 @@ install -d -m 0700 -o "${FLL_LIVE_USER}" -g "${GROUP}" "${HOME_DIR}/.ssh"
 install -m 0600 -o "${FLL_LIVE_USER}" -g "${GROUP}" \
 	"${KEYSRC}" "${HOME_DIR}/.ssh/authorized_keys"
 
-# Host keys are generated when openssh-server installs; regenerate any missing
-# ones (a no-op otherwise) so sshd can start.
+# Host keys are excluded from the rootfs and generated here on first boot; they
+# then persist via /etc (the unit's condition keeps this from running again).
 ssh-keygen -A >/dev/null 2>&1
 
 # openssh-server ships on the media but its unit is blacklisted from autostart.
-systemctl start ssh
+# Enable it (the symlink persists via /etc) so sshd autostarts on later boots
+# when this unit is skipped, and start it now.
+systemctl enable --now ssh
 
-echo "fll_sshd: installed authorized_keys for ${FLL_LIVE_USER}, started sshd"
+echo "fll_sshd: installed authorized_keys for ${FLL_LIVE_USER}, enabled and started sshd"
