@@ -15,8 +15,11 @@ setup_displaymanager() {
 						/etc/gdm3/daemon.conf
 			fi
 
+			# reflect this boot's session type both ways (persist keeps the last edit)
 			if [ "${FLL_XTYPE}" = "x11" ]; then
-				sed -i "s/#WaylandEnable=false/WaylandEnable=false/" /etc/gdm3/daemon.conf
+				sed -i "s/^#*WaylandEnable=.*/WaylandEnable=false/" /etc/gdm3/daemon.conf
+			else
+				sed -i "s/^#*WaylandEnable=.*/#WaylandEnable=false/" /etc/gdm3/daemon.conf
 			fi
 
 			# preselect the xsession
@@ -64,12 +67,11 @@ EOF
 				: >"${SDDM_CONF}"
 			fi
 
-			if [ "${FLL_XTYPE}" = "x11" ]; then
-				if grep -q '^DisplayServer=' "${SDDM_CONF}"; then
-					sed -i 's/^DisplayServer=.*/DisplayServer=x11/' "${SDDM_CONF}"
-				else
-					printf '\n[General]\nDisplayServer=x11\n' >>"${SDDM_CONF}"
-				fi
+			# reflect this boot's session type both ways, not just x11 (persist sticks)
+			if grep -q '^DisplayServer=' "${SDDM_CONF}"; then
+				sed -i "s/^DisplayServer=.*/DisplayServer=${FLL_XTYPE}/" "${SDDM_CONF}"
+			else
+				printf '\n[General]\nDisplayServer=%s\n' "${FLL_XTYPE}" >>"${SDDM_CONF}"
 			fi
 			;;
 			slim)

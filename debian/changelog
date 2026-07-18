@@ -14,6 +14,15 @@ fll-live-boot (20260718.1) UNRELEASED; urgency=medium
   * fll.initramfs: stop editing /etc/calamares at boot (pyfll now bakes
     it at build). Boot-time edits copied it into the persist overlay,
     where a stale copy shadowed an upgraded ISO's config.
+  * fll_locales: make calamares geoip/guessLayout track the current boot
+    (add when no lang=, remove when given) instead of a one-way append
+    that persisted stale on persist media.
+  * fll_desktop: set gdm3 WaylandEnable and sddm DisplayServer to match
+    the booted session type both ways, not one-way toward x11 (persist
+    kept a stale x11 setting for a later wayland boot).
+  * fll_home: stop seeding root's dotfiles and .hushlogin at boot; bash
+    completion is now enabled system-wide and .hushlogin created at
+    build by pyfll.
 
  -- Kel Modderman <kelvmod@gmail.com>  Sat, 18 Jul 2026 19:22:15 +1000
 

@@ -235,26 +235,34 @@ set_keyboard() {
 }
 
 configure_calamares_geoip() {
+	[ -d /etc/calamares/modules ] || return 0
+
+	welcome=/etc/calamares/modules/welcome.conf
+	keyboard=/etc/calamares/modules/keyboard.conf
+	marker='# added by fll_locales: no language was selected at boot time'
+
+	# /etc persists: drop any block from an earlier boot, re-add below only when
+	# no lang= (else geoip overrides the chosen language). rm empty stubs we made.
+	for f in "${welcome}" "${keyboard}"; do
+		[ -f "${f}" ] || continue
+		sed -i "/^${marker}\$/,\$d" "${f}"
+		[ -s "${f}" ] || rm -f "${f}"
+	done
+
 	[ -n "$LANG_CMDLINE" ] && return 0
 
-	mkdir -p /etc/calamares/modules
-
-	if ! grep -q '^geoip:' /etc/calamares/modules/welcome.conf 2>/dev/null; then
-		cat >> /etc/calamares/modules/welcome.conf << 'EOF'
-# added by fll_locales: no language was selected at boot time
+	cat >> "${welcome}" << EOF
+${marker}
 geoip:
     style:    "xml"
     url:      "https://geoip.kde.org/v1/ubiquity"
     selector: "CountryCode"
 EOF
-	fi
 
-	if ! grep -q '^guessLayout:' /etc/calamares/modules/keyboard.conf 2>/dev/null; then
-		cat >> /etc/calamares/modules/keyboard.conf << 'EOF'
-# added by fll_locales: no language was selected at boot time
+	cat >> "${keyboard}" << EOF
+${marker}
 guessLayout: true
 EOF
-	fi
 }
 
 case "$1" in
