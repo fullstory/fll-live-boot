@@ -23,9 +23,6 @@ fll-live-boot (20260718.1) UNRELEASED; urgency=medium
   * fll_home: stop seeding root's dotfiles and .hushlogin at boot; bash
     completion is now enabled system-wide and .hushlogin created at
     build by pyfll.
-  * fll.initramfs: when persist_uuid= is set but the device is absent in
-    a VM (systemd-detect-virt), boot volatile tmpfs COW instead of
-    wedging boot; real hardware still fails as before.
 
  -- Kel Modderman <kelvmod@gmail.com>  Sat, 18 Jul 2026 19:22:15 +1000
 
