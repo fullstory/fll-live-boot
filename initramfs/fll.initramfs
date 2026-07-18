@@ -285,6 +285,14 @@ FLL_UNION_COWDIR="/run/fll/cow"
 FLL_PERSIST_MNT="/run/fll/persist"
 FLL_PERSIST_DEV=""
 mkdir -p "${FLL_UNION_COWDIR}"
+
+if [ -n "${FLL_PERSIST_UUID}" ] && systemd-detect-virt --quiet && \
+   ! fll_wait_for_dev "/dev/disk/by-uuid/${FLL_PERSIST_LUKS_UUID:-${FLL_PERSIST_UUID}}"; then
+    fll_say "persist device absent in VM; booting volatile tmpfs COW"
+    FLL_PERSIST_UUID=""
+    FLL_PERSIST_LUKS_UUID=""
+fi
+
 # prepare COW/overlay union filesystem
 if [ -n "${FLL_PERSIST_UUID}" ] && [ -n "${FLL_ROOTFS_UUID}" ]; then
     if [ -n "${FLL_PERSIST_LUKS_UUID}" ]; then
