@@ -27,6 +27,9 @@ fll-live-boot (20260718.1) UNRELEASED; urgency=medium
     plasma user. With no login password the wallet cannot be unlocked,
     so apps such as Chromium would otherwise stall on the wallet setup
     wizard.
+  * fll_session_passwordless: apply the plasma passwordless tweaks
+    (KWallet disable, screen-lock relaxation) to any *plasma* session,
+    e.g. kodi-plasma-toggle.
 
  -- Kel Modderman <kelvmod@gmail.com>  Sat, 18 Jul 2026 19:22:15 +1000
 
