@@ -324,9 +324,11 @@ if [ -n "${FLL_PERSIST_UUID}" ] && [ -n "${FLL_ROOTFS_UUID}" ]; then
         fll_cleanup_mounts
         exit 1
     fi
-    # @root is the COW subvolume. Create the uuid-specific upper/work dirs
-    # on first boot (or after an upgrade reset).
-    FLL_UNION_COWDIR="${FLL_PERSIST_MNT}/@root/${FLL_ROOTFS_UUID}"
+    # @root is the COW subvolume. Key the per-flavour COW dir by image_file:
+    # a stable identity across rebuilds (unlike rootfs_uuid, which is random
+    # per build), so an upgrade can carry /etc forward into the same dir.
+    # Create the upper/work dirs on first boot (or after an upgrade reset).
+    FLL_UNION_COWDIR="${FLL_PERSIST_MNT}/@root/${FLL_IMAGE_FILE}"
     mkdir -p "${FLL_UNION_COWDIR}/upper" "${FLL_UNION_COWDIR}/work"
 else
     if ! mount -n -t tmpfs -o size=90%,mode=755 tmpfs "${FLL_UNION_COWDIR}"; then
