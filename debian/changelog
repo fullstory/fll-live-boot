@@ -11,6 +11,9 @@ fll-live-boot (20260718.1) UNRELEASED; urgency=medium
     the host key. Host keys and authorized_keys now persist via /etc, so
     enable sshd to autostart on later boots instead of regenerating host
     keys (slow on early boot) every time.
+  * fll.initramfs: stop editing /etc/calamares at boot (pyfll now bakes
+    it at build). Boot-time edits copied it into the persist overlay,
+    where a stale copy shadowed an upgraded ISO's config.
 
  -- Kel Modderman <kelvmod@gmail.com>  Sat, 18 Jul 2026 19:22:15 +1000
 
