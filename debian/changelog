@@ -1,9 +1,5 @@
-fll-live-boot (20260718.1) UNRELEASED; urgency=medium
+fll-live-boot (20260718.1) unstable; urgency=medium
 
-  [ Stefan Lippers-Hollmann ]
-  * NOT RELEASED YET
-
-  [ Kel Modderman ]
   * fll.initramfs: key the persist COW dir by image_file (stable across
     rebuilds) instead of rootfs_uuid (random per build), so an upgrade
     can carry /etc forward into the same per-flavour dir.
