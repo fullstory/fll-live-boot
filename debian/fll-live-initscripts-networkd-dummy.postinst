@@ -51,7 +51,7 @@ case "$1" in
 Name=en*
 
 [Network]
-DHCP=both
+DHCP=yes
 IPv6PrivacyExtensions=true
 
 [DHCP]
