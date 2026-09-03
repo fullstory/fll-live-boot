@@ -1,9 +1,5 @@
-fll-live-boot (20260830.1) UNRELEASED; urgency=medium
+fll-live-boot (20260830.1) unstable; urgency=medium
 
-  [ Stefan Lippers-Hollmann ]
-  * NOT RELEASED YET
-
-  [ Kel Modderman ]
   * Fix deprecated systemd-networkd option:
       /etc/systemd/network/wired.network:5: DHCP=both is deprecated,
       please use DHCP=yes instead.
