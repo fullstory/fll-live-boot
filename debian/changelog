@@ -1,3 +1,9 @@
+fll-live-boot (20260830.2) UNRELEASED; urgency=medium
+
+  * NOT RELEASED YET
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Thu, 03 Sep 2026 02:21:18 +0200
+
 fll-live-boot (20260830.1) unstable; urgency=medium
 
   * Fix deprecated systemd-networkd option:
