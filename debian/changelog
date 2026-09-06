@@ -8,6 +8,10 @@ fll-live-boot (20260907.1) UNRELEASED; urgency=medium
     only after copying them, and their size alone overflowed /run (10%
     of RAM); hide them from the copy so the exitrd is complete and boot
     no longer prints 'No space left on device'.
+  * fll-sshd: no daemon-reload during boot. fll.initramfs lays down the
+    ssh.service enable symlink before PID 1 when a public key is baked,
+    sshd-keygen.service generates host keys, and fll_sshd only installs
+    authorized_keys, ordered before ssh.service.
 
  -- Kel Modderman <kelvmod@gmail.com>  Mon, 07 Sep 2026 07:38:13 +1000
 

@@ -1,9 +1,8 @@
 [Unit]
 ConditionPathExists=/var/lib/fll/ssh_authorized_keys
-ConditionPathExists=!/etc/ssh/ssh_host_ed25519_key
 Description=Live SSH Access Service
 DefaultDependencies=no
-Before=shutdown.target
+Before=shutdown.target ssh.service
 Conflicts=shutdown.target
 After=fll-home.service
 
@@ -15,4 +14,4 @@ ExecStart=/usr/share/fll-live-initscripts/fll_sshd
 Restart=no
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=ssh.service

@@ -1,10 +1,11 @@
 #!/bin/sh
 # fll_sshd - provision non-root SSH access to the live user.
 #
-# fll-sshd.service gates this to the first pristine boot (baked key present, host
-# keys not yet generated). It installs the key, generates host keys, and enables
-# sshd; both persist via /etc, so later boots skip the unit and sshd autostarts.
-# Root stays out of scope (sshd prohibit-password; sudo/sshstart cover privilege).
+# Runs before ssh.service on media carrying a baked public key and installs it
+# as the live user's authorized_keys. Host keys are sshd-keygen.service's job
+# and autostart is the wants symlink fll.initramfs lays down before PID 1, so
+# boot runs no systemctl. Root stays out of scope (sshd prohibit-password;
+# sudo/sshstart cover privilege).
 
 set -e
 
@@ -21,18 +22,12 @@ if [ -z "${HOME_DIR}" ] || [ ! -d "${HOME_DIR}" ]; then
 fi
 GROUP="$(id -gn "${FLL_LIVE_USER}")"
 
+# a persisted home keeps what it has
+[ -s "${HOME_DIR}/.ssh/authorized_keys" ] && exit 0
+
 # Install the baked key as the live user's sole authorized_keys (0700/0600).
 install -d -m 0700 -o "${FLL_LIVE_USER}" -g "${GROUP}" "${HOME_DIR}/.ssh"
 install -m 0600 -o "${FLL_LIVE_USER}" -g "${GROUP}" \
 	"${KEYSRC}" "${HOME_DIR}/.ssh/authorized_keys"
 
-# Host keys are excluded from the rootfs and generated here on first boot; they
-# then persist via /etc (the unit's condition keeps this from running again).
-ssh-keygen -A >/dev/null 2>&1
-
-# openssh-server ships on the media but its unit is blacklisted from autostart.
-# Enable it (the symlink persists via /etc) so sshd autostarts on later boots
-# when this unit is skipped, and start it now.
-systemctl enable --now ssh
-
-echo "fll_sshd: installed authorized_keys for ${FLL_LIVE_USER}, enabled and started sshd"
+echo "fll_sshd: installed authorized_keys for ${FLL_LIVE_USER}"
