@@ -72,11 +72,16 @@ mountroot()
     # https://systemd.io/INITRD_INTERFACE/
     mkdir /run/initramfs~
     mount --bind / /run/initramfs~
+    # exitrd needs neither modules nor firmware; hide them from the copy
+    for d in lib/modules lib/firmware; do
+        [ -d "/run/initramfs~/${d}" ] && mount -t tmpfs tmpfs "/run/initramfs~/${d}"
+    done
     cp -a /run/initramfs~/* /run/initramfs/
+    for d in lib/modules lib/firmware; do
+        umount "/run/initramfs~/${d}" 2>/dev/null
+    done
     umount /run/initramfs~
     rmdir /run/initramfs~
-    # Put exitrd on a diet to save memory
-    rm -rf /run/initramfs/lib/modules /run/initramfs/lib/firmware
     log_end_msg
 
     # stop logging
