@@ -1,10 +1,11 @@
 #!/bin/sh
 # fll_sshd - provision non-root SSH access to the live user.
 #
-# Runs before ssh.service on media carrying a baked public key and installs it
-# as the live user's authorized_keys. Host keys are sshd-keygen.service's job
-# and autostart is the wants symlink fll.initramfs lays down before PID 1, so
-# boot runs no systemctl. Root stays out of scope (sshd prohibit-password;
+# Runs before ssh.service on media carrying a baked public key: generates the
+# host keys sshd-keygen.service would (its ConditionFirstBoot is not met on
+# live media) and installs the key as the live user's authorized_keys.
+# Autostart is the wants symlink fll.initramfs lays down before PID 1, so boot
+# runs no systemctl. Root stays out of scope (sshd prohibit-password;
 # sudo/sshstart cover privilege).
 
 set -e
@@ -14,6 +15,9 @@ FLL_LIVE_USER="aptosid"
 
 KEYSRC="/var/lib/fll/ssh_authorized_keys"
 [ -s "${KEYSRC}" ] || exit 0
+
+# host keys are excluded from the rootfs; a persisted /etc keeps them
+[ -e /etc/ssh/ssh_host_ed25519_key ] || ssh-keygen -A >/dev/null 2>&1
 
 HOME_DIR="$(getent passwd "${FLL_LIVE_USER}" | cut -d: -f6)"
 if [ -z "${HOME_DIR}" ] || [ ! -d "${HOME_DIR}" ]; then
