@@ -1,9 +1,5 @@
-fll-live-boot (20260907.1) UNRELEASED; urgency=medium
+fll-live-boot (20260907.1) unstable; urgency=medium
 
-  [ Stefan Lippers-Hollmann ]
-  * NOT RELEASED YET
-
-  [ Kel Modderman ]
   * initramfs-tools: the exit ramfs copy removed modules and firmware
     only after copying them, and their size alone overflowed /run (10%
     of RAM); hide them from the copy so the exitrd is complete and boot
