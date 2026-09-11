@@ -343,7 +343,8 @@ setup_desktop() {
 			else
 				XKB_DEFAULT_LAYOUT="${XKBLAYOUT}"
 			fi
-			if ! grep -q '^XKB_DEFAULT_LAYOUT=' /etc/xdg/labwc/environment; then
+			if [ -d /etc/xdg/labwc ] && \
+			   ! grep -qs '^XKB_DEFAULT_LAYOUT=' /etc/xdg/labwc/environment; then
 				cat >> /etc/xdg/labwc/environment <<EOF
 XKB_DEFAULT_LAYOUT="${XKB_DEFAULT_LAYOUT}"
 EOF
