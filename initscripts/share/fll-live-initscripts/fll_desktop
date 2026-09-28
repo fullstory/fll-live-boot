@@ -52,6 +52,21 @@ EOF
 				ln -fs "${FLL_LIVE_USER}.conf" /etc/lxdm/default.conf
 			fi
 			;;
+		plm|plasma-login-manager)
+			mkdir -p /etc/plasmalogin.conf.d
+			PLM_CONF="/etc/plasmalogin.conf.d/${FLL_LIVE_USER}.conf"
+			if [ "${FLL_AUTOLOGIN}" = "yes" ]; then
+				grep -q '^\[Autologin\]' "${PLM_CONF}" 2>/dev/null || \
+					printf "\n[Autologin]\nUser=${FLL_LIVE_USER}\nSession=${FLL_DM_SESSION}\nRelogin=true\n" \
+						>>"${PLM_CONF}"
+			else
+				# encrypted homed home: no autologin; the greeter prompts for the
+				# password, which pam_systemd_home uses to unlock the home. The
+				# session comes from the home record (--session-launcher). Touch
+				# the file so the DisplayServer setting below has a target.
+				: >"${PLM_CONF}"
+			fi
+			;;
 		sddm)
 			mkdir -p /etc/sddm.conf.d
 			SDDM_CONF="/etc/sddm.conf.d/${FLL_LIVE_USER}.conf"
@@ -74,7 +89,7 @@ EOF
 				printf '\n[General]\nDisplayServer=%s\n' "${FLL_XTYPE}" >>"${SDDM_CONF}"
 			fi
 			;;
-			slim)
+		slim)
 			# set autologin for $FLL_LIVE_USER to yes
 			if [ "${FLL_AUTOLOGIN}" = "yes" ]; then
 				sed -i	-e "s/^default_user.*/\#FLL\#&/" \
