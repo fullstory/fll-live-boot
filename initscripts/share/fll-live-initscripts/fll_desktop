@@ -52,7 +52,7 @@ EOF
 				ln -fs "${FLL_LIVE_USER}.conf" /etc/lxdm/default.conf
 			fi
 			;;
-		plm|plasma-login-manager)
+		plasmalogin)
 			mkdir -p /etc/plasmalogin.conf.d
 			PLM_CONF="/etc/plasmalogin.conf.d/${FLL_LIVE_USER}.conf"
 			if [ "${FLL_AUTOLOGIN}" = "yes" ]; then
@@ -414,7 +414,7 @@ if [ -f "/usr/share/wayland-sessions/${FLL_XSESSION}-uwsm.desktop" ]; then
 fi
 
 # configure displaymanager
-for displaymanager in greetd slim lxdm lightdm gdm3 sddm; do
+for displaymanager in greetd slim lxdm lightdm gdm3 sddm plasmalogin; do
 	command -v "${displaymanager}" >/dev/null 2>&1 || continue
 	echo "Configuring ${displaymanager}..."
 	setup_displaymanager "${displaymanager}"
