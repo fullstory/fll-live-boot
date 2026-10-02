@@ -6,8 +6,11 @@ fll-live-boot (20261003.1) UNRELEASED; urgency=medium
   [ Kel Modderman ]
   * fll_blockdev_detect: listen for udev events before scanning, so a
     late disk is not missed.
+  * fll_sshd: take the live user's ssh key from the system credential
+    fll.ssh.authorized_keys at boot, falling back to a baked key, so
+    sshd runs only when a key is handed in.
 
- -- Kel Modderman <kelvmod@gmail.com>  Sat, 03 Oct 2026 05:41:54 +1000
+ -- Kel Modderman <kelvmod@gmail.com>  Sat, 03 Oct 2026 08:59:16 +1000
 
 fll-live-boot (20260928.2) unstable; urgency=medium
 

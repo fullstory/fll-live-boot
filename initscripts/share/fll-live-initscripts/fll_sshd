@@ -1,9 +1,10 @@
 #!/bin/sh
 # fll_sshd - provision non-root SSH access to the live user.
 #
-# Runs before ssh.service on media carrying a baked public key: generates the
-# host keys sshd-keygen.service would (its ConditionFirstBoot is not met on
-# live media) and installs the key as the live user's authorized_keys.
+# Runs before ssh.service when a public key came in at boot as the system
+# credential fll.ssh.authorized_keys, or was baked into the media: generates
+# the host keys sshd-keygen.service would (its ConditionFirstBoot is not met
+# on live media) and installs the key as the live user's authorized_keys.
 # Autostart is the wants symlink fll.initramfs lays down before PID 1, so boot
 # runs no systemctl. Root stays out of scope (sshd prohibit-password;
 # sudo/sshstart cover privilege).
@@ -13,7 +14,9 @@ set -e
 FLL_LIVE_USER="aptosid"
 [ -r /etc/default/distro ] && . /etc/default/distro
 
-KEYSRC="/var/lib/fll/ssh_authorized_keys"
+# a key handed in at boot wins over one baked into the media
+KEYSRC="${CREDENTIALS_DIRECTORY}/fll.ssh.authorized_keys"
+[ -s "${KEYSRC}" ] || KEYSRC="/var/lib/fll/ssh_authorized_keys"
 [ -s "${KEYSRC}" ] || exit 0
 
 # host keys are excluded from the rootfs; a persisted /etc keeps them
@@ -29,7 +32,7 @@ GROUP="$(id -gn "${FLL_LIVE_USER}")"
 # a persisted home keeps what it has
 [ -s "${HOME_DIR}/.ssh/authorized_keys" ] && exit 0
 
-# Install the baked key as the live user's sole authorized_keys (0700/0600).
+# Install the key as the live user's sole authorized_keys (0700/0600).
 install -d -m 0700 -o "${FLL_LIVE_USER}" -g "${GROUP}" "${HOME_DIR}/.ssh"
 install -m 0600 -o "${FLL_LIVE_USER}" -g "${GROUP}" \
 	"${KEYSRC}" "${HOME_DIR}/.ssh/authorized_keys"

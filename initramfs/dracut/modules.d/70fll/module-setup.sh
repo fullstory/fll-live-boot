@@ -29,7 +29,7 @@ installkernel() {
 install() {
     inst_multiple blkid cat cryptsetup dd echo eject env grep \
         kill ln losetup ls mkdir mount readlink rmdir sed systemd-detect-virt \
-        tail umount
+        tail tr umount
     inst "/usr/libexec/fll/fll_blockdev_detect" "/usr/bin/fll_blockdev_detect"
     inst_simple /etc/default/distro
     inst_hook mount 99 "$moddir/fll.sh"

@@ -1,5 +1,6 @@
 [Unit]
-ConditionPathExists=/var/lib/fll/ssh_authorized_keys
+ConditionPathExists=|/var/lib/fll/ssh_authorized_keys
+ConditionCredential=|fll.ssh.authorized_keys
 Description=Live SSH Access Service
 DefaultDependencies=no
 Before=shutdown.target ssh.service
@@ -10,6 +11,7 @@ After=fll-home.service
 Type=oneshot
 RemainAfterExit=yes
 EnvironmentFile=/etc/default/distro
+ImportCredential=fll.ssh.authorized_keys
 ExecStart=/usr/share/fll-live-initscripts/fll_sshd
 Restart=no
 
