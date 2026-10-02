@@ -118,13 +118,33 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
+	/* listen before enumerating: an event in between would be lost */
+	if (opts.monitor_flag) {
+		udev_monitor = udev_monitor_new_from_netlink(udev, "udev");
+		if (udev_monitor == NULL) {
+			fprintf(stderr, "Error: udev_monitor_new_from_netlink()\n");
+			goto cleanup;
+		}
+		if (udev_monitor_filter_add_match_subsystem_devtype(udev_monitor,
+								    "block",
+								    "disk") < 0 ||
+		    udev_monitor_filter_add_match_subsystem_devtype(udev_monitor,
+								    "block",
+								    "partition") < 0) {
+			fprintf(stderr, "Error: udev_monitor_filter_add_match_subsystem_devtype()\n");
+			goto cleanup;
+		}
+		if (udev_monitor_enable_receiving(udev_monitor) < 0) {
+			fprintf(stderr, "Error: udev_monitor_enable_receiving()\n");
+			goto cleanup;
+		}
+	}
+
 	/* enumerate existing block devices */
 	u_enum = udev_enumerate_new(udev);
 	if (u_enum == NULL) {
 		fprintf(stderr, "Error: udev_enumerate_new(udev)\n");
-		cmdline_parser_free(&opts);
-		udev_unref(udev);
-		return 1;
+		goto cleanup;
 	}
 
 	udev_enumerate_add_match_subsystem(u_enum, "block");
@@ -149,6 +169,12 @@ int main(int argc, char **argv)
 			continue;
 		}
 
+		/* udev has yet to probe it; the monitor gets its event */
+		if (opts.monitor_flag && !udev_device_get_is_initialized(device)) {
+			udev_device_unref(device);
+			continue;
+		}
+
 		ret = process_device(device);
 		udev_device_unref(device);
 		if (ret)
@@ -161,29 +187,6 @@ int main(int argc, char **argv)
 
 	/* set an alarm to interrupt the monitor loop */
 	setup_timeout_signal(opts.timeout_arg);
-
-	/* monitor add|change of block devices until timeout period expires */
-	udev_monitor = udev_monitor_new_from_netlink(udev, "udev");
-	if (udev_monitor == NULL) {
-		fprintf(stderr, "Error: udev_monitor_new_from_netlink()\n");
-		ret = -1;
-		goto cleanup;
-	}
-	if (udev_monitor_filter_add_match_subsystem_devtype(udev_monitor,
-							    "block",
-							    "disk") < 0 ||
-	    udev_monitor_filter_add_match_subsystem_devtype(udev_monitor,
-							    "block",
-							    "partition") < 0) {
-		fprintf(stderr, "Error: udev_monitor_filter_add_match_subsystem_devtype()\n");
-		ret = -1;
-		goto cleanup;
-	}
-	if (udev_monitor_enable_receiving(udev_monitor) < 0) {
-		fprintf(stderr, "Error: udev_monitor_enable_receiving()\n");
-		ret = -1;
-		goto cleanup;
-	}
 
 	fd = udev_monitor_get_fd(udev_monitor);
 
