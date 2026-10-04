@@ -137,7 +137,7 @@ initramfs-tools/
 ```
 
 **`hooks/fll`** runs at initramfs build time (`update-initramfs`). It copies the
-required kernel modules (overlay, erofs, squashfs, dm-crypt, ntfs3, vfat, exfat,
+required kernel modules (overlay, erofs, squashfs, dm-crypt, ntfs, vfat, exfat,
 loop, NLS modules, pmem modules for UEFI HTTP boot), binaries (`fll_blockdev_detect`,
 `cryptsetup`, `eject`, `systemd-detect-virt`), and the two fll scripts into the
 initramfs image. It also installs `/shutdown` (systemd-shutdown binary) and
@@ -176,7 +176,7 @@ the `fll` module, and compresses the output with `zstd` at level 3.
 - `check()` — refuses to install in hostonly mode (live-only module).
 - `depends()` — declares dependencies on the `base` and `fs-lib` dracut modules.
 - `installkernel()` — adds kernel modules: iso9660, erofs, loop, squashfs, overlay,
-  common filesystems (ext4, btrfs, jfs, f2fs, xfs, ntfs3, vfat, exfat, udf),
+  common filesystems (ext4, btrfs, jfs, f2fs, xfs, ntfs, vfat, exfat, udf),
   pmem modules (of_pmem, nd_pmem, nfit), and dm-crypt.
 - `install()` — copies required userspace binaries and installs `fll.sh` as a
   mount-phase hook (priority 99), `fll.initramfs` as `/sbin/fll`, and `fll.shutdown`

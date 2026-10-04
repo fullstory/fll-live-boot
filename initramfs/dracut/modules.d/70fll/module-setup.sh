@@ -22,7 +22,7 @@ depends() {
 
 installkernel() {
     hostonly='' instmods iso9660 erofs loop squashfs overlay \
-        ext4 btrfs jfs f2fs xfs ntfs3 vfat exfat udf \
+        ext4 btrfs jfs f2fs xfs ntfs vfat exfat udf \
         of_pmem nd_pmem nfit dm-crypt
 }
 
