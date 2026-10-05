@@ -23,7 +23,7 @@ fll_say()
     if [ -n "${FLL_PLYMOUTH}" ]; then
         plymouth display-message --text="${*}"
     else
-        printf '%s\n' "${*}"
+        printf '%s\n' "${*}" >&2
     fi
 }
 
@@ -487,6 +487,20 @@ fi
 if [ -r "${FLL_ROOTFS_MNT}/etc/${FLL_DISTRO_NAME}-version" ]; then
     fll_say "Booting $(cat ${FLL_ROOTFS_MNT}/etc/${FLL_DISTRO_NAME}-version) ..."
 fi
+
+# save the running initramfs as the shutdown exitrd, minus modules and firmware
+mkdir -p /run/initramfs~
+if mount --bind / /run/initramfs~; then
+    for dir in lib/modules lib/firmware; do
+        [ -d "/run/initramfs~/${dir}" ] && mount -t tmpfs tmpfs "/run/initramfs~/${dir}"
+    done
+    cp -a /run/initramfs~/. /run/initramfs/ || rm -f /run/initramfs/shutdown
+    for dir in lib/modules lib/firmware; do
+        umount "/run/initramfs~/${dir}" 2>/dev/null
+    done
+    umount /run/initramfs~
+fi
+rmdir /run/initramfs~
 
 ln -sf null /dev/root
 : > /run/initramfs/.need_shutdown

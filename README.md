@@ -36,7 +36,7 @@ needed to produce an initramfs that can boot live media:
 | Script | Purpose |
 |--------|---------|
 | `fll.initramfs` | Mounts the read-only rootfs and sets up the overlay COW layer, persistence, hostname, timezone, and getty |
-| `fll.shutdown` | Runs at shutdown via systemd-shutdown |
+| `fll.shutdown` | Runs at shutdown as a dracut shutdown hook |
 
 ---
 
@@ -61,17 +61,22 @@ probes it with `blkid` and performs the following in order:
    and, when no `tz=` is given, enables its GeoIP timezone lookup.
 9. Configures hostname, timezone (`/etc/timezone`, `/etc/localtime`, `/etc/adjtime`),
    and the live getty (`getty@.service` override).
-10. Creates the `/dev/root` null symlink, which tells dracut that the root is
-    mounted, and touches `/run/initramfs/.need_shutdown` so that the initramfs is
-    unpacked again for shutdown.
+10. Copies the running initramfs, minus kernel modules and firmware, into
+    `/run/initramfs` as the shutdown exitrd, creates the `/dev/root` null symlink,
+    which tells dracut that the root is mounted, and touches
+    `/run/initramfs/.need_shutdown`.
 
 ---
 
 ## fll.shutdown
 
-`fll.shutdown` is installed as a systemd-shutdown drop-in
-(`/usr/lib/systemd/system-shutdown/fll`). When the system shuts down or reboots,
-systemd pivots back into the initramfs and runs all scripts in that directory.
+`fll.shutdown` is installed as a dracut shutdown hook
+(`/lib/dracut/hooks/shutdown/50-fll.shutdown`). When the system shuts down or
+reboots, systemd pivots into the exitrd that `fll.initramfs` saved under
+`/run/initramfs` at boot, and dracut's `shutdown` script sources the hooks in
+that directory. dracut's own `dracut-initramfs-restore` is skipped because the
+exitrd is already in place; it could not work on live media anyway, since the
+rootfs image does not carry the initrd.
 
 If `/dev/fll-cdrom` exists (i.e. the live media was optical and `noeject` was not
 used, and the system is not a virtual machine), `fll.shutdown` calls `eject` and
@@ -140,14 +145,14 @@ the `fll` module.
 **`module-setup.sh`** is the dracut module descriptor. Its functions:
 
 - `check()` — refuses to install in hostonly mode (live-only module).
-- `depends()` — declares dependencies on the `base`, `fs-lib` and `initqueue`
-  dracut modules.
+- `depends()` — declares dependencies on the `base`, `fs-lib`, `initqueue` and
+  `shutdown` dracut modules.
 - `installkernel()` — adds kernel modules: iso9660, erofs, loop, squashfs, overlay,
   common filesystems (ext4, btrfs, jfs, f2fs, xfs, ntfs, vfat, exfat, udf),
   pmem modules (of_pmem, nd_pmem, nfit), and dm-crypt.
 - `install()` — copies required userspace binaries, the udev rule and the hooks,
-  and installs `fll.initramfs` as `/sbin/fll` and `fll.shutdown` as
-  `/usr/lib/systemd/system-shutdown/fll`.
+  and installs `fll.initramfs` as `/sbin/fll` and `fll.shutdown` as a
+  `shutdown` hook.
 
 **`99-fll.rules`** queues `/sbin/fll <device>` in the dracut initqueue for every
 block disk or partition that is added or changed. The job runs once udev has
@@ -167,7 +172,7 @@ media was not found.
 ```
 /usr/share/fll-live-initramfs/
 ├── fll.initramfs          # main live mount script
-└── fll.shutdown           # systemd-shutdown eject script
+└── fll.shutdown           # dracut shutdown hook, ejects the live CD
 
 /usr/lib/dracut/
 ├── dracut.conf.d/10-fll.conf

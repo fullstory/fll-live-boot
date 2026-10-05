@@ -22,6 +22,15 @@ fll-live-boot (20261006.1) UNRELEASED; urgency=medium
     fll_login, and fll-live-initramfs depends on it instead.
   * fll-live-initramfs: drop the busybox recommendation. dracut installs
     every tool fll.initramfs needs, and chmod is now listed explicitly.
+  * fll.shutdown: install it as a dracut shutdown hook. dracut's exitrd
+    only runs its own hooks, never /usr/lib/systemd/system-shutdown, so
+    the CD eject never ran.
+  * fll.initramfs: print fll_say messages on stderr so they reach the
+    console. dracut-initqueue.service sends only stderr to the console.
+  * fll.initramfs: copy the running initramfs into /run/initramfs at
+    boot, without modules and firmware, so the shutdown exitrd exists.
+    dracut-initramfs-restore needs the initrd inside the rootfs, and
+    live media does not carry it there.
 
  -- Kel Modderman <kelvmod@gmail.com>  Tue, 06 Oct 2026 00:00:19 +1000
 

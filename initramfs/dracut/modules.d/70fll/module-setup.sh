@@ -17,7 +17,7 @@ check() {
 }
 
 depends() {
-    echo base fs-lib initqueue
+    echo base fs-lib initqueue shutdown
 }
 
 installkernel() {
@@ -34,6 +34,5 @@ install() {
     inst_hook initqueue/finished 50 "$moddir/fll-finished.sh"
     inst_hook emergency 50 "$moddir/fll-emergency.sh"
     inst_script "/usr/share/fll-live-initramfs/fll.initramfs" "/sbin/fll"
-    inst_script "/usr/share/fll-live-initramfs/fll.shutdown" \
-        "/usr/lib/systemd/system-shutdown/fll"
+    inst_hook shutdown 50 "/usr/share/fll-live-initramfs/fll.shutdown"
 }
