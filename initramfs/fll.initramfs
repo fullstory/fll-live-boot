@@ -83,7 +83,8 @@ if grep -qw -E 'fll[.=]debug' /proc/cmdline; then
     env
 fi
 
-[ -n "${ID_FS_TYPE}" ] || ID_FS_TYPE="$(blkid -s TYPE -o value ${DEVNAME})"
+DEVNAME="${1}"
+ID_FS_TYPE="$(blkid -s TYPE -o value ${DEVNAME})"
 
 case "${ID_FS_TYPE}" in
     iso9660|ext*|btrfs|jfs|f2fs|xfs|ntfs|vfat|exfat|udf|erofs)
@@ -94,7 +95,7 @@ case "${ID_FS_TYPE}" in
         ;;
 esac
 
-[ -n "${ID_FS_UUID}" ] || ID_FS_UUID="$(blkid -s UUID -o value ${DEVNAME})"
+ID_FS_UUID="$(blkid -s UUID -o value ${DEVNAME})"
 
 # source distro-defaults
 [ -s /etc/default/distro ] && . /etc/default/distro
@@ -198,13 +199,7 @@ for opt in $(cat /proc/cmdline); do
     esac
 done
 
-if [ "${NEWROOT}" ]; then
-    # dracut
-    FLL_ROOTFS_MNT="${NEWROOT}"
-else
-    # initramfs-tools
-    FLL_ROOTFS_MNT="${rootmnt:-/root}"
-fi
+FLL_ROOTFS_MNT="${NEWROOT}"
 
 # Refuse to guess: without the cheatcode identifying which UUID this device
 # must match, an empty ID_FS_UUID below would match any filesystem.
@@ -505,6 +500,9 @@ fi
 if [ -r "${FLL_ROOTFS_MNT}/etc/${FLL_DISTRO_NAME}-version" ]; then
     fll_say "Booting $(cat ${FLL_ROOTFS_MNT}/etc/${FLL_DISTRO_NAME}-version) ..."
 fi
+
+ln -sf null /dev/root
+: > /run/initramfs/.need_shutdown
 
 # success
 exit 0

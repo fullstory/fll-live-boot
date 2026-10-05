@@ -1,9 +1,18 @@
-fll-live-boot (20261004.1) UNRELEASED; urgency=medium
+fll-live-boot (20261005.1) UNRELEASED; urgency=medium
 
   * initramfs: the kernel's NTFS driver is named ntfs since 7.x, so ask
     for that instead of ntfs3.
+  * initramfs: find the live media with a udev rule and the dracut
+    initqueue, instead of fll_blockdev_detect.
+  * Drop initramfs-tools support. fll-live-initramfs now depends on
+    dracut.
+  * fll-live-utils: drop fll_blockdev_detect. The package is now
+    Architecture: all, and the gengetopt, pkgconf and libudev-dev build
+    dependencies are gone.
+  * fll.debug: the shell trace now goes to the console and the journal,
+    not to /var/log/fll/debug.log.
 
- -- Kel Modderman <kelvmod@gmail.com>  Sun, 04 Oct 2026 13:10:43 +1000
+ -- Kel Modderman <kelvmod@gmail.com>  Mon, 05 Oct 2026 23:25:35 +1000
 
 fll-live-boot (20261003.1) unstable; urgency=medium
 

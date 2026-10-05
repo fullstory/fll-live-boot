@@ -11,9 +11,9 @@ initramfs).
 
 | Path | Contents |
 |------|----------|
-| `initramfs/` | initramfs payload: `fll.initramfs`, `fll.shutdown`, and the `initramfs-tools/` and `dracut/` generator integration |
+| `initramfs/` | initramfs payload: `fll.initramfs`, `fll.shutdown`, and the `dracut/` module |
 | `initscripts/` | running-system payload: systemd-helper scripts (`share/`, including the `90-fll.rules` polkit grant that `fll_home` deploys to `/run` only for the passwordless non-homed user), and the shutdown `/run` remount helper |
-| `utils/` | `fll_blockdev_detect` (C, baked into the initramfs) and `fll_login` (getty helper) |
+| `utils/` | `fll_login` (getty helper) |
 | `debian/` | packaging for all binary packages |
 
 ## Binary packages
@@ -25,32 +25,28 @@ One source, the same five binary packages as before:
 | `fll-live-initramfs` | all | initramfs glue (`initramfs/`); depends on `fll-live-utils` |
 | `fll-live-initscripts` | all | systemd units and helper scripts (`initscripts/`) |
 | `fll-live-initscripts-networkd-dummy` | all | default `wired.network` (created in postinst) |
-| `fll-live-utils` | any | `fll_blockdev_detect` and `fll_login` (`/usr/libexec/fll`) |
+| `fll-live-utils` | all | `fll_login` (`/usr/libexec/fll`) |
 | `distro-defaults` | all | build-time generated distro defaults |
 
 ---
 
 ## Initramfs glue
 
-Supports both **dracut** and **initramfs-tools** as initramfs generators, installing
-two scripts plus the generator-specific infrastructure needed to produce an initramfs
-that can boot live media:
+Built with **dracut**. The `fll` dracut module installs two scripts plus the hooks
+needed to produce an initramfs that can boot live media:
 
 | Script | Purpose |
 |--------|---------|
 | `fll.initramfs` | Mounts the read-only rootfs and sets up the overlay COW layer, persistence, hostname, timezone, and getty |
 | `fll.shutdown` | Runs at shutdown via systemd-shutdown |
 
-The scripts are generator-agnostic shell. The generator-specific layers (described
-below) embed them into the initramfs and wire them into the correct hooks.
-
 ---
 
 ## fll.initramfs
 
-`fll.initramfs` is called once per block device candidate by `fll_blockdev_detect`.
-It receives the device path and filesystem type via the environment (`$DEVNAME`,
-`$ID_FS_TYPE`, `$ID_FS_UUID`) and performs the following in order:
+`fll.initramfs` is installed as `/sbin/fll` and run from the dracut initqueue once
+per block device candidate. It receives the device path as its first argument,
+probes it with `blkid` and performs the following in order:
 
 1. Parses boot parameters from `/proc/cmdline`.
 2. Identifies the block device carrying the live media — either an iso9660/carrier
@@ -66,9 +62,9 @@ It receives the device path and filesystem type via the environment (`$DEVNAME`,
 8. Patches Calamares configuration (readonly fstype, initramfs tool, bootloader).
 9. Configures hostname, timezone (`/etc/timezone`, `/etc/localtime`, `/etc/adjtime`),
    and the live getty (`getty@.service` override).
-
-The script detects whether it is running under **dracut** (via `$NEWROOT`) or
-**initramfs-tools** (via `$rootmnt`) and sets the root mount point accordingly.
+10. Creates the `/dev/root` null symlink, which tells dracut that the root is
+    mounted, and touches `/run/initramfs/.need_shutdown` so that the initramfs is
+    unpacked again for shutdown.
 
 ---
 
@@ -121,71 +117,49 @@ are of the form `key=value` or bare words.
 
 | Parameter | Description |
 |-----------|-------------|
-| `fll.debug` or `fll=debug` | Enable `set -x` shell tracing in `fll.initramfs` and the generator-specific wrapper script. The trace is written to `debug.log` in the initramfs working directory and copied to `/var/log/fll/debug.log` in the booted system if `/var/log` exists. The environment is also dumped at startup. |
+| `fll.debug` or `fll=debug` | Enable `set -x` shell tracing in `fll.initramfs`. The trace goes to the console and the journal (`journalctl -b -u dracut-initqueue.service` in the booted system). The environment is also dumped at startup. |
 
 ---
 
-## initramfs-tools support
-
-Files installed under `initramfs-tools/` are placed by the package into
-`/usr/share/initramfs-tools/`:
-
-```
-initramfs-tools/
-├── hooks/fll      → /usr/share/initramfs-tools/hooks/fll
-└── scripts/fll    → /usr/share/initramfs-tools/scripts/fll
-```
-
-**`hooks/fll`** runs at initramfs build time (`update-initramfs`). It copies the
-required kernel modules (overlay, erofs, squashfs, dm-crypt, ntfs, vfat, exfat,
-loop, NLS modules, pmem modules for UEFI HTTP boot), binaries (`fll_blockdev_detect`,
-`cryptsetup`, `eject`, `systemd-detect-virt`), and the two fll scripts into the
-initramfs image. It also installs `/shutdown` (systemd-shutdown binary) and
-`/etc/initrd-release` so that systemd recognises the initramfs as an initrd
-environment.
-
-**`scripts/fll`** provides the `mountroot()` function called by the initramfs-tools
-init framework. It:
-
-1. Runs `/scripts/local-top` (e.g. for LVM).
-2. Calls `fll_blockdev_detect --monitor --execp=/usr/lib/fll/fll.initramfs` to
-   listen for udev block device events and invoke `fll.initramfs` for each
-   candidate until the live media is found.
-3. Copies the running initramfs into `/run/initramfs/` (the systemd exitrd) and
-   strips modules and firmware to conserve memory.
-
----
-
-## dracut support
+## dracut module
 
 Files installed under `dracut/` are placed by the package into `/usr/lib/`:
 
 ```
 dracut/
-├── dracut.conf.d/fll/10-fll.conf   → /usr/lib/dracut/dracut.conf.d/fll/10-fll.conf
+├── dracut.conf.d/10-fll.conf        → /usr/lib/dracut/dracut.conf.d/10-fll.conf
 └── modules.d/70fll/
     ├── module-setup.sh              → /usr/lib/dracut/modules.d/70fll/module-setup.sh
-    └── fll.sh                       → /usr/lib/dracut/modules.d/70fll/fll.sh
+    ├── 99-fll.rules                 → /usr/lib/dracut/modules.d/70fll/99-fll.rules
+    ├── fll-finished.sh              → /usr/lib/dracut/modules.d/70fll/fll-finished.sh
+    └── fll-emergency.sh             → /usr/lib/dracut/modules.d/70fll/fll-emergency.sh
 ```
 
-**`10-fll.conf`** sets dracut to non-hostonly mode (generic initramfs), includes
-the `fll` module, and compresses the output with `zstd` at level 3.
+**`10-fll.conf`** sets dracut to non-hostonly mode (generic initramfs) and includes
+the `fll` module.
 
 **`module-setup.sh`** is the dracut module descriptor. Its functions:
 
 - `check()` — refuses to install in hostonly mode (live-only module).
-- `depends()` — declares dependencies on the `base` and `fs-lib` dracut modules.
+- `depends()` — declares dependencies on the `base`, `fs-lib` and `initqueue`
+  dracut modules.
 - `installkernel()` — adds kernel modules: iso9660, erofs, loop, squashfs, overlay,
   common filesystems (ext4, btrfs, jfs, f2fs, xfs, ntfs, vfat, exfat, udf),
   pmem modules (of_pmem, nd_pmem, nfit), and dm-crypt.
-- `install()` — copies required userspace binaries and installs `fll.sh` as a
-  mount-phase hook (priority 99), `fll.initramfs` as `/sbin/fll`, and `fll.shutdown`
-  as `/usr/lib/systemd/system-shutdown/fll`.
+- `install()` — copies required userspace binaries, the udev rule and the hooks,
+  and installs `fll.initramfs` as `/sbin/fll` and `fll.shutdown` as
+  `/usr/lib/systemd/system-shutdown/fll`.
 
-**`fll.sh`** is the dracut mount hook. It calls
-`fll_blockdev_detect --monitor --execp=/sbin/fll`, creates the `/dev/root` null
-symlink required by dracut to signal that root has been found, and touches
-`/run/initramfs/.need_shutdown` to activate the systemd exitrd path.
+**`99-fll.rules`** queues `/sbin/fll <device>` in the dracut initqueue for every
+block disk or partition that is added or changed. The job runs once udev has
+settled, and again if the device changes later.
+
+**`fll-finished.sh`** is the initqueue finished hook. The initqueue runs the
+queued jobs until `/dev/root` exists, or until `rd.retry` seconds (default 180)
+have passed.
+
+**`fll-emergency.sh`** prints a warning in the emergency shell when the live
+media was not found.
 
 ---
 
@@ -193,18 +167,16 @@ symlink required by dracut to signal that root has been found, and touches
 
 ```
 /usr/share/fll-live-initramfs/
-├── fll.initramfs          # main live mount script (shared by both generators)
+├── fll.initramfs          # main live mount script
 └── fll.shutdown           # systemd-shutdown eject script
 
-/usr/share/initramfs-tools/
-├── hooks/fll              # initramfs-tools build hook
-└── scripts/fll            # initramfs-tools mountroot() implementation
-
 /usr/lib/dracut/
-├── dracut.conf.d/fll/10-fll.conf
+├── dracut.conf.d/10-fll.conf
 └── modules.d/70fll/
     ├── module-setup.sh
-    └── fll.sh
+    ├── 99-fll.rules
+    ├── fll-finished.sh
+    └── fll-emergency.sh
 ```
 
 ---
