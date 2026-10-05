@@ -1,4 +1,4 @@
-LINT := $(wildcard initscripts/share/fll-live-initscripts/fll_*) utils/fll_login \
+LINT := $(wildcard initscripts/share/fll-live-initscripts/fll_*) initscripts/fll_login \
 	initramfs/fll.initramfs initramfs/fll.shutdown \
 	initramfs/dracut/modules.d/70fll/fll-finished.sh \
 	initramfs/dracut/modules.d/70fll/fll-emergency.sh

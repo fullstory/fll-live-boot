@@ -12,20 +12,18 @@ initramfs).
 | Path | Contents |
 |------|----------|
 | `initramfs/` | initramfs payload: `fll.initramfs`, `fll.shutdown`, and the `dracut/` module |
-| `initscripts/` | running-system payload: systemd-helper scripts (`share/`, including the `90-fll.rules` polkit grant that `fll_home` deploys to `/run` only for the passwordless non-homed user) |
-| `utils/` | `fll_login` (getty helper) |
+| `initscripts/` | running-system payload: systemd-helper scripts (`share/`, including the `90-fll.rules` polkit grant that `fll_home` deploys to `/run` only for the passwordless non-homed user), and `fll_login` (getty helper) |
 | `debian/` | packaging for all binary packages |
 
 ## Binary packages
 
-One source, the same five binary packages as before:
+One source, four binary packages:
 
 | Package | Arch | Contents |
 |---------|------|----------|
-| `fll-live-initramfs` | all | initramfs glue (`initramfs/`); depends on `fll-live-utils` |
-| `fll-live-initscripts` | all | systemd units and helper scripts (`initscripts/`) |
+| `fll-live-initramfs` | all | initramfs glue (`initramfs/`); depends on `fll-live-initscripts` |
+| `fll-live-initscripts` | all | systemd units, helper scripts and `fll_login` (`initscripts/`) |
 | `fll-live-initscripts-networkd-dummy` | all | default `wired.network` (created in postinst) |
-| `fll-live-utils` | all | `fll_login` (`/usr/libexec/fll`) |
 | `distro-defaults` | all | build-time generated distro defaults |
 
 ---

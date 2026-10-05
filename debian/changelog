@@ -18,6 +18,8 @@ fll-live-boot (20261005.1) UNRELEASED; urgency=medium
     with exec. Only initramfs-tools mounted /run noexec.
   * fll-live-initramfs: drop the procps dependency. Nothing in the
     initramfs uses it.
+  * fll-live-utils: drop the package. fll-live-initscripts now ships
+    fll_login, and fll-live-initramfs depends on it instead.
 
  -- Kel Modderman <kelvmod@gmail.com>  Mon, 05 Oct 2026 23:25:35 +1000
 
