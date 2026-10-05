@@ -27,19 +27,6 @@ fll_say()
     fi
 }
 
-# A system credential handed in at boot, as the systemd initrd imports it or
-# straight from the SMBIOS type 11 table for initramfs-tools.
-fll_has_credential()
-{
-    [ -s "/run/credentials/@system/${1}" ] && return 0
-    for _fll_raw in /sys/firmware/dmi/entries/11-*/raw; do
-        [ -r "${_fll_raw}" ] || continue
-        tr '\0' '\n' < "${_fll_raw}" 2>/dev/null | \
-            grep -qE "^io\.systemd\.credential(\.binary)?:${1}=" && return 0
-    done
-    return 1
-}
-
 fll_toram()
 {
     fll_say "Copying rootfs to ram: ${1} ..."
@@ -490,7 +477,7 @@ fi
 # sshd: the enable symlink is laid down here so PID 1 loads it at startup,
 # no daemon-reload later
 if { [ -s "${FLL_ROOTFS_MNT}/var/lib/fll/ssh_authorized_keys" ] ||
-     fll_has_credential fll.ssh.authorized_keys; } &&
+     [ -s /run/credentials/@system/fll.ssh.authorized_keys ]; } &&
     [ -r "${FLL_ROOTFS_MNT}/usr/lib/systemd/system/ssh.service" ]; then
     mkdir -p "${FLL_ROOTFS_MNT}/etc/systemd/system/multi-user.target.wants"
     ln -fs /usr/lib/systemd/system/ssh.service \

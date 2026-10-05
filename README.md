@@ -12,7 +12,7 @@ initramfs).
 | Path | Contents |
 |------|----------|
 | `initramfs/` | initramfs payload: `fll.initramfs`, `fll.shutdown`, and the `dracut/` module |
-| `initscripts/` | running-system payload: systemd-helper scripts (`share/`, including the `90-fll.rules` polkit grant that `fll_home` deploys to `/run` only for the passwordless non-homed user), and the shutdown `/run` remount helper |
+| `initscripts/` | running-system payload: systemd-helper scripts (`share/`, including the `90-fll.rules` polkit grant that `fll_home` deploys to `/run` only for the passwordless non-homed user) |
 | `utils/` | `fll_login` (getty helper) |
 | `debian/` | packaging for all binary packages |
 
@@ -59,7 +59,8 @@ probes it with `blkid` and performs the following in order:
 6. Bind-mounts the btrfs `@home` subvolume over `/home` when persisting.
 7. Writes a udev rule (`/etc/udev/rules.d/70-fll-live.rules`) to create a
    persistent `/dev/fll` symlink (and `/dev/fll-cdrom` for optical drives).
-8. Patches Calamares configuration (readonly fstype, initramfs tool, bootloader).
+8. Points Calamares at the read-only rootfs image (`/run/fll/<fstype>` symlink)
+   and, when no `tz=` is given, enables its GeoIP timezone lookup.
 9. Configures hostname, timezone (`/etc/timezone`, `/etc/localtime`, `/etc/adjtime`),
    and the live getty (`getty@.service` override).
 10. Creates the `/dev/root` null symlink, which tells dracut that the root is

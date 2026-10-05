@@ -1,3 +1,2 @@
-initscripts/fll.shutdown                 usr/lib/systemd/system-shutdown
 initscripts/share/fll-live-initscripts/* usr/share/fll-live-initscripts
 initscripts/fll-live-inhibit-suspend.desktop etc/xdg/autostart

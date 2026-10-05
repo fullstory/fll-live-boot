@@ -11,6 +11,13 @@ fll-live-boot (20261005.1) UNRELEASED; urgency=medium
     dependencies are gone.
   * fll.debug: the shell trace now goes to the console and the journal,
     not to /var/log/fll/debug.log.
+  * fll.initramfs: read the ssh key credential only from
+    /run/credentials/@system. The systemd initrd puts SMBIOS credentials
+    there, so the SMBIOS fallback for initramfs-tools is gone.
+  * fll-live-initscripts: drop the shutdown helper that remounted /run
+    with exec. Only initramfs-tools mounted /run noexec.
+  * fll-live-initramfs: drop the procps dependency. Nothing in the
+    initramfs uses it.
 
  -- Kel Modderman <kelvmod@gmail.com>  Mon, 05 Oct 2026 23:25:35 +1000
 

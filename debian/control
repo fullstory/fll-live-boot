@@ -26,7 +26,6 @@ Depends: ${misc:Depends},
  distro-defaults,
  dracut,
  fll-live-utils,
- procps,
  eject
 Recommends: busybox
 Description: fll live media initramfs glue
