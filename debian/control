@@ -27,7 +27,6 @@ Depends: ${misc:Depends},
  dracut,
  fll-live-initscripts,
  eject
-Recommends: busybox
 Description: fll live media initramfs glue
  This package provides the script glue that allows dracut to generate
  an early userspace filesystem suitable for booting the live media of
