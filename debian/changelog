@@ -1,4 +1,4 @@
-fll-live-boot (20261004.1) UNRELEASED; urgency=medium
+fll-live-boot (20261004.1) unstable; urgency=medium
 
   * initramfs: the kernel's NTFS driver is named ntfs since 7.x, so ask
     for that instead of ntfs3.
