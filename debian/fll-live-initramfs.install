@@ -1,3 +1,2 @@
 initramfs/fll.*          usr/share/fll-live-initramfs
-initramfs/initramfs-tools usr/share
 initramfs/dracut         usr/lib

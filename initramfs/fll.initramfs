@@ -23,21 +23,8 @@ fll_say()
     if [ -n "${FLL_PLYMOUTH}" ]; then
         plymouth display-message --text="${*}"
     else
-        printf '%s\n' "${*}"
+        printf '%s\n' "${*}" >&2
     fi
-}
-
-# A system credential handed in at boot, as the systemd initrd imports it or
-# straight from the SMBIOS type 11 table for initramfs-tools.
-fll_has_credential()
-{
-    [ -s "/run/credentials/@system/${1}" ] && return 0
-    for _fll_raw in /sys/firmware/dmi/entries/11-*/raw; do
-        [ -r "${_fll_raw}" ] || continue
-        tr '\0' '\n' < "${_fll_raw}" 2>/dev/null | \
-            grep -qE "^io\.systemd\.credential(\.binary)?:${1}=" && return 0
-    done
-    return 1
 }
 
 fll_toram()
@@ -83,7 +70,8 @@ if grep -qw -E 'fll[.=]debug' /proc/cmdline; then
     env
 fi
 
-[ -n "${ID_FS_TYPE}" ] || ID_FS_TYPE="$(blkid -s TYPE -o value ${DEVNAME})"
+DEVNAME="${1}"
+ID_FS_TYPE="$(blkid -s TYPE -o value ${DEVNAME})"
 
 case "${ID_FS_TYPE}" in
     iso9660|ext*|btrfs|jfs|f2fs|xfs|ntfs|vfat|exfat|udf|erofs)
@@ -94,7 +82,7 @@ case "${ID_FS_TYPE}" in
         ;;
 esac
 
-[ -n "${ID_FS_UUID}" ] || ID_FS_UUID="$(blkid -s UUID -o value ${DEVNAME})"
+ID_FS_UUID="$(blkid -s UUID -o value ${DEVNAME})"
 
 # source distro-defaults
 [ -s /etc/default/distro ] && . /etc/default/distro
@@ -198,13 +186,7 @@ for opt in $(cat /proc/cmdline); do
     esac
 done
 
-if [ "${NEWROOT}" ]; then
-    # dracut
-    FLL_ROOTFS_MNT="${NEWROOT}"
-else
-    # initramfs-tools
-    FLL_ROOTFS_MNT="${rootmnt:-/root}"
-fi
+FLL_ROOTFS_MNT="${NEWROOT}"
 
 # Refuse to guess: without the cheatcode identifying which UUID this device
 # must match, an empty ID_FS_UUID below would match any filesystem.
@@ -495,7 +477,7 @@ fi
 # sshd: the enable symlink is laid down here so PID 1 loads it at startup,
 # no daemon-reload later
 if { [ -s "${FLL_ROOTFS_MNT}/var/lib/fll/ssh_authorized_keys" ] ||
-     fll_has_credential fll.ssh.authorized_keys; } &&
+     [ -s /run/credentials/@system/fll.ssh.authorized_keys ]; } &&
     [ -r "${FLL_ROOTFS_MNT}/usr/lib/systemd/system/ssh.service" ]; then
     mkdir -p "${FLL_ROOTFS_MNT}/etc/systemd/system/multi-user.target.wants"
     ln -fs /usr/lib/systemd/system/ssh.service \
@@ -505,6 +487,23 @@ fi
 if [ -r "${FLL_ROOTFS_MNT}/etc/${FLL_DISTRO_NAME}-version" ]; then
     fll_say "Booting $(cat ${FLL_ROOTFS_MNT}/etc/${FLL_DISTRO_NAME}-version) ..."
 fi
+
+# save the running initramfs as the shutdown exitrd, minus modules and firmware
+mkdir -p /run/initramfs~
+if mount --bind / /run/initramfs~; then
+    for dir in lib/modules lib/firmware; do
+        [ -d "/run/initramfs~/${dir}" ] && mount -t tmpfs tmpfs "/run/initramfs~/${dir}"
+    done
+    cp -a /run/initramfs~/. /run/initramfs/ || rm -f /run/initramfs/shutdown
+    for dir in lib/modules lib/firmware; do
+        umount "/run/initramfs~/${dir}" 2>/dev/null
+    done
+    umount /run/initramfs~
+fi
+rmdir /run/initramfs~
+
+ln -sf null /dev/root
+: > /run/initramfs/.need_shutdown
 
 # success
 exit 0

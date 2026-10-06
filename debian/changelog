@@ -1,8 +1,40 @@
-fll-live-boot (20261004.2) UNRELEASED; urgency=medium
+fll-live-boot (20261006.1) UNRELEASED; urgency=medium
 
+  [ Stefan Lippers-Hollmann ]
   * NOT RELEASED YET
 
- -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Tue, 06 Oct 2026 05:30:58 +0200
+  [ Kel Modderman ]
+  * initramfs: find the live media with a udev rule and the dracut
+    initqueue, instead of fll_blockdev_detect.
+  * Drop initramfs-tools support. fll-live-initramfs now depends on
+    dracut.
+  * fll-live-utils: drop fll_blockdev_detect. The package is now
+    Architecture: all, and the gengetopt, pkgconf and libudev-dev build
+    dependencies are gone.
+  * fll.debug: the shell trace now goes to the console and the journal,
+    not to /var/log/fll/debug.log.
+  * fll.initramfs: read the ssh key credential only from
+    /run/credentials/@system. The systemd initrd puts SMBIOS credentials
+    there, so the SMBIOS fallback for initramfs-tools is gone.
+  * fll-live-initscripts: drop the shutdown helper that remounted /run
+    with exec. Only initramfs-tools mounted /run noexec.
+  * fll-live-initramfs: drop the procps dependency. Nothing in the
+    initramfs uses it.
+  * fll-live-utils: drop the package. fll-live-initscripts now ships
+    fll_login, and fll-live-initramfs depends on it instead.
+  * fll-live-initramfs: drop the busybox recommendation. dracut installs
+    every tool fll.initramfs needs, and chmod is now listed explicitly.
+  * fll.shutdown: install it as a dracut shutdown hook. dracut's exitrd
+    only runs its own hooks, never /usr/lib/systemd/system-shutdown, so
+    the CD eject never ran.
+  * fll.initramfs: print fll_say messages on stderr so they reach the
+    console. dracut-initqueue.service sends only stderr to the console.
+  * fll.initramfs: copy the running initramfs into /run/initramfs at
+    boot, without modules and firmware, so the shutdown exitrd exists.
+    dracut-initramfs-restore needs the initrd inside the rootfs, and
+    live media does not carry it there.
+
+ -- Kel Modderman <kelvmod@gmail.com>  Tue, 06 Oct 2026 14:24:54 +1000
 
 fll-live-boot (20261004.1) unstable; urgency=medium
 

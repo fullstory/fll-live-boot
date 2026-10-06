@@ -17,7 +17,7 @@ check() {
 }
 
 depends() {
-    echo base fs-lib
+    echo base fs-lib initqueue shutdown
 }
 
 installkernel() {
@@ -27,13 +27,12 @@ installkernel() {
 }
 
 install() {
-    inst_multiple blkid cat cryptsetup dd echo eject env grep \
-        kill ln losetup ls mkdir mount readlink rmdir sed systemd-detect-virt \
-        tail tr umount
-    inst "/usr/libexec/fll/fll_blockdev_detect" "/usr/bin/fll_blockdev_detect"
+    inst_multiple blkid cat chmod cryptsetup dd echo eject env grep \
+        ln mkdir mount readlink rmdir sed systemd-detect-virt umount
     inst_simple /etc/default/distro
-    inst_hook mount 99 "$moddir/fll.sh"
+    inst_rules "$moddir/99-fll.rules"
+    inst_hook initqueue/finished 50 "$moddir/fll-finished.sh"
+    inst_hook emergency 50 "$moddir/fll-emergency.sh"
     inst_script "/usr/share/fll-live-initramfs/fll.initramfs" "/sbin/fll"
-    inst_script "/usr/share/fll-live-initramfs/fll.shutdown" \
-        "/usr/lib/systemd/system-shutdown/fll"
+    inst_hook shutdown 50 "/usr/share/fll-live-initramfs/fll.shutdown"
 }
