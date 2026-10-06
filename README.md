@@ -61,10 +61,10 @@ probes it with `blkid` and performs the following in order:
    and, when no `tz=` is given, enables its GeoIP timezone lookup.
 9. Configures hostname, timezone (`/etc/timezone`, `/etc/localtime`, `/etc/adjtime`),
    and the live getty (`getty@.service` override).
-10. Copies the running initramfs, minus kernel modules and firmware, into
-    `/run/initramfs` as the shutdown exitrd, creates the `/dev/root` null symlink,
-    which tells dracut that the root is mounted, and touches
-    `/run/initramfs/.need_shutdown`.
+10. On optical media without `fll.noeject`, copies the running initramfs, minus
+    kernel modules and firmware, into `/run/initramfs` as the shutdown exitrd and
+    touches `/run/initramfs/.need_shutdown`. Then creates the `/dev/root` null
+    symlink, which tells dracut that the root is mounted.
 
 ---
 
@@ -74,7 +74,8 @@ probes it with `blkid` and performs the following in order:
 (`/lib/dracut/hooks/shutdown/50-fll.shutdown`). When the system shuts down or
 reboots, systemd pivots into the exitrd that `fll.initramfs` saved under
 `/run/initramfs` at boot, and dracut's `shutdown` script sources the hooks in
-that directory. dracut's own `dracut-initramfs-restore` is skipped because the
+that directory. The exitrd costs about 90 MB of RAM, so it is only saved when the
+live media is optical and `fll.noeject` is not in effect. dracut's own `dracut-initramfs-restore` is skipped because the
 exitrd is already in place; it could not work on live media anyway, since the
 rootfs image does not carry the initrd.
 

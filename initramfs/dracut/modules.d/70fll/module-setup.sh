@@ -28,7 +28,7 @@ installkernel() {
 
 install() {
     inst_multiple blkid cat chmod cryptsetup dd echo eject env grep \
-        ln mkdir mount readlink rmdir sed systemd-detect-virt umount
+        ln mkdir mount readlink rmdir sed systemd-detect-virt udevadm umount
     inst_simple /etc/default/distro
     inst_rules "$moddir/99-fll.rules"
     inst_hook initqueue/finished 50 "$moddir/fll-finished.sh"

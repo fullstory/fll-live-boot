@@ -36,6 +36,9 @@ fll-live-boot (20261006.1) UNRELEASED; urgency=medium
   * Accept every cheatcode with a fll. prefix (fll.toram, fll.lang=,
     fll.fromiso=, ...), following the dracut module.feature=value idiom.
     The legacy spelling still works.
+  * fll.initramfs: save the shutdown exitrd only for optical media
+    without noeject. It only serves the CD eject, and it holds about 90
+    MB of RAM.
 
  -- Kel Modderman <kelvmod@gmail.com>  Tue, 06 Oct 2026 14:24:54 +1000
 
