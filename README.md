@@ -87,35 +87,50 @@ waits for the user to remove the disc before continuing.
 ## Boot parameters (cheatcodes)
 
 All parameters are read from the kernel command line (`/proc/cmdline`). Parameters
-are of the form `key=value` or bare words.
+are of the form `fll.key=value` or bare `fll.key` words, following the dracut
+`module.feature=value` idiom. The legacy spelling without the `fll.` prefix
+(`toram`, `lang=de`, `fromiso=...`) is still accepted everywhere.
 
 ### Media location
 
 | Parameter | Description |
 |-----------|-------------|
-| `iso_uuid=UUID` | UUID of the iso9660 carrier filesystem. Used to identify the correct block device when multiple removable devices are present. Typically set by the bootloader. |
-| `rootfs_uuid=UUID` | UUID of the rootfs partition itself (e.g. an erofs partition exposed directly by a hybrid GPT image). When this is set the script skips the iso9660 container and mounts the partition directly. |
-| `fromiso=PATH` | Path to an ISO file on a filesystem. The file is loop-mounted as an iso9660 volume and the rootfs image is read from within it. |
-| `fromhd=DEV` | Restrict probing to a specific block device. Accepts `UUID=<uuid>`, `/dev/disk/by-uuid/<uuid>`, or a `/dev/*` path. Set automatically by **grub2-fll-fromiso**. |
-| `image_dir=DIR` | Override the directory inside the carrier filesystem that contains the rootfs image file. Defaults to the value from `/etc/default/distro`. |
-| `image_file=FILE` | Override the rootfs image filename. Defaults to the value from `/etc/default/distro`. |
+| `fll.iso_uuid=UUID` | UUID of the iso9660 carrier filesystem. Used to identify the correct block device when multiple removable devices are present. Typically set by the bootloader. |
+| `fll.rootfs_uuid=UUID` | UUID of the rootfs partition itself (e.g. an erofs partition exposed directly by a hybrid GPT image). When this is set the script skips the iso9660 container and mounts the partition directly. |
+| `fll.fromiso=PATH` | Path to an ISO file on a filesystem. The file is loop-mounted as an iso9660 volume and the rootfs image is read from within it. |
+| `fll.fromhd=DEV` | Restrict probing to a specific block device. Accepts `UUID=<uuid>`, `/dev/disk/by-uuid/<uuid>`, or a `/dev/*` path. Set automatically by **grub2-fll-fromiso**. |
+| `fll.image_dir=DIR` | Override the directory inside the carrier filesystem that contains the rootfs image file. Defaults to the value from `/etc/default/distro`. |
+| `fll.image_file=FILE` | Override the rootfs image filename. Defaults to the value from `/etc/default/distro`. |
+| `fll.toram` | Copy the rootfs image into RAM and release the media. |
+| `fll.noeject` | Do not create `/dev/fll-cdrom`: no eject prompt at shutdown, and no exitrd is saved. Implied inside a virtual machine. |
 
 ### Persistence
 
 | Parameter | Description |
 |-----------|-------------|
-| `persist_uuid=UUID` | UUID of a btrfs partition to use for persistent storage. The `@root` subvolume is used as the overlay upper directory; `@home` is bind-mounted over `/home`. Both `persist_uuid` and `rootfs_uuid` must be given together. |
-| `persist_luks_uuid=UUID` | UUID of a LUKS container wrapping the persist btrfs partition. When set, the passphrase is requested via Plymouth (with up to 3 attempts) or read from `/dev/console`. The unlocked device appears as `/dev/mapper/fll-persist`. |
+| `fll.persist_uuid=UUID` | UUID of a btrfs partition to use for persistent storage. The `@root` subvolume is used as the overlay upper directory; `@home` is bind-mounted over `/home`. Both `persist_uuid` and `rootfs_uuid` must be given together. |
+| `fll.persist_luks_uuid=UUID` | UUID of a LUKS container wrapping the persist btrfs partition. When set, the passphrase is requested via Plymouth (with up to 3 attempts) or read from `/dev/console`. The unlocked device appears as `/dev/mapper/fll-persist`. |
 
 ### Locale and identity
 
 | Parameter | Description |
 |-----------|-------------|
-| `hostname=NAME` | Set a custom hostname in `/etc/hostname`, `/etc/mailname`, and `/etc/hosts`. |
-| `tz=TIMEZONE` | Set the timezone. Must match a path under `/usr/share/zoneinfo/`. Both `/etc/timezone` and `/etc/localtime` are written. If omitted, defaults to `Etc/UTC` and Calamares is configured to perform a GeoIP timezone lookup. |
-| `utc=yes` | Write `/etc/adjtime` with `UTC` mode (hardware clock is UTC). |
-| `utc` or `gmt` | Alias for `tz=Etc/UTC`. |
-| `username=NAME` | Override the live username written to `/etc/default/distro`. |
+| `fll.hostname=NAME` | Set a custom hostname in `/etc/hostname`, `/etc/mailname`, and `/etc/hosts`. |
+| `fll.tz=TIMEZONE` | Set the timezone. Must match a path under `/usr/share/zoneinfo/`. Both `/etc/timezone` and `/etc/localtime` are written. If omitted, defaults to `Etc/UTC` and Calamares is configured to perform a GeoIP timezone lookup. |
+| `fll.utc=yes` | Write `/etc/adjtime` with `UTC` mode (hardware clock is UTC). |
+| `fll.utc` (legacy `utc` or `gmt`) | Alias for `fll.tz=Etc/UTC`. |
+| `fll.username=NAME` | Override the live username written to `/etc/default/distro`. |
+
+### Session
+
+Read in the booted system by `fll_locales` and `fll_desktop`.
+
+| Parameter | Description |
+|-----------|-------------|
+| `fll.lang=ll_CC` | Language and country for the locale and the keyboard layout. Dash or underscore separator, or a bare language code. |
+| `fll.keytable=LAYOUT` | Keyboard layout override. |
+| `fll.xkbmodel=MODEL`, `fll.xkbvariant=VARIANT`, `fll.xkboptions=OPTS` | XKB overrides written to `/etc/default/keyboard`. |
+| `fll.desktop=SESSION` | Session to start, matched against `/usr/share/*sessions/*.desktop`. |
 
 ### Debugging
 

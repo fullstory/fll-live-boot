@@ -164,6 +164,7 @@ KBOPTIONS=""
 if [ -r /proc/cmdline ]; then
 	read -r CMDLINE < /proc/cmdline
 	for param in $CMDLINE; do
+		param="${param#fll.}"
 		case "$param" in
 			lang=*)
 				LANG_CMDLINE=$(printf '%s' "${param#lang=}" | tr '[:upper:]' '[:lower:]')

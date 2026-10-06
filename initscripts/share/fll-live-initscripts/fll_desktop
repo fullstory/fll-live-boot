@@ -394,6 +394,7 @@ done
 
 # setup active desktop
 for opt in $(cat /proc/cmdline); do
+	opt="${opt#fll.}"
 	case "${opt}" in
 		desktop=*)
 			setup_desktop "${opt#desktop=}"

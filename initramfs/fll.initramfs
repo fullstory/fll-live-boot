@@ -104,6 +104,7 @@ fi
 
 # parse fll options given on cmdline
 for opt in $(cat /proc/cmdline); do
+    opt="${opt#fll.}"
     case "${opt}" in
         fromiso=*)
             FLL_FROMISO="${opt#fromiso=}"
