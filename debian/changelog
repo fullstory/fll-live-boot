@@ -1,9 +1,5 @@
-fll-live-boot (20261006.1) UNRELEASED; urgency=medium
+fll-live-boot (20261006.1) unstable; urgency=medium
 
-  [ Stefan Lippers-Hollmann ]
-  * NOT RELEASED YET
-
-  [ Kel Modderman ]
   * initramfs: find the live media with a udev rule and the dracut
     initqueue, instead of fll_blockdev_detect.
   * Drop initramfs-tools support. fll-live-initramfs now depends on
