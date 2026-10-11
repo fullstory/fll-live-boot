@@ -77,7 +77,16 @@ locale_xkb_variant() {
 		"$LOCALE_DB"
 }
 
-# Resolve the best available LANG value for a language+country pair:
+# Print the locales this system has, then those locale-gen can generate.
+locale_available() {
+	locale -a 2>/dev/null
+	command -v locale-gen > /dev/null || return 0
+	awk '$2 == "UTF-8" && sub(/\.UTF-8$/, ".utf8", $1) { print $1 }' \
+		/usr/share/i18n/SUPPORTED 2>/dev/null
+}
+
+# Resolve the best available LANG value for a language+country pair, where
+# available is generated or generatable (locale_available):
 #   1. Exact ll_CC.utf8 if available on this system
 #   2. Fallbacks listed in DB for that exact locale, first one available
 #   3. Primary locale for the language (is_default=1), if available on this system
@@ -89,7 +98,7 @@ locale_resolve_lang() {
 	country_code="$2"
 	requested="${lang_code}_${country_code}.utf8"
 
-	available=$(locale -a 2>/dev/null)
+	available=$(locale_available)
 
 	# 1. Exact locale is available on this system
 	if printf '%s\n' "$available" | grep -qxF "$requested"; then
@@ -194,11 +203,13 @@ LANG_CMDLINE="${LANG_CMDLINE%%.*}"
 LANG_CODE="${LANG_CMDLINE%%[-_]*}"
 COUNTRY_CODE=$(printf '%s' "${LANG_CMDLINE##*[-_]}" | tr '[:lower:]' '[:upper:]')
 
-# Resolve LANG from the requested language + country
-LANG="en_US.utf8"
+# Resolve LANG from the requested language + country; without one, or when
+# none resolves, keep the locale the image was built with
+BAKED_LANG=$(sed -n 's/^LANG=//p' /etc/locale.conf /etc/default/locale 2>/dev/null | head -n 1 | tr -d '"')
+LANG="${BAKED_LANG:-en_US.utf8}"
 
 if [ -n "$LANG_CMDLINE" ]; then
-	LANG=$(locale_resolve_lang "$LANG_CODE" "$COUNTRY_CODE") || LANG="en_US.utf8"
+	LANG=$(locale_resolve_lang "$LANG_CODE" "$COUNTRY_CODE") || LANG="${BAKED_LANG:-en_US.utf8}"
 fi
 
 export LANG
@@ -222,7 +233,12 @@ XKBVARIANT=$(locale_xkb_variant "$KB_LOCALE")
 [ -n "$KBOPTIONS" ] && XKBOPTIONS="$KBOPTIONS"
 
 set_locale() {
-	grep -q "^LANG=${LANG}$" /etc/locale.conf 2>/dev/null && return 0
+	[ "${LANG}" = "${BAKED_LANG}" ] && return 0
+	# in locale.gen too, so a later locale-gen keeps it
+	if ! locale -a 2>/dev/null | grep -qxF "$LANG"; then
+		printf '%s.UTF-8 UTF-8\n' "${LANG%%.*}" >> /etc/locale.gen
+		locale-gen --keep-existing || return 0
+	fi
 	update-locale "LANG=${LANG}"
 }
 

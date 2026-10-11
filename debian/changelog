@@ -7,6 +7,10 @@ fll-live-boot (20261006.3) UNRELEASED; urgency=medium
   * fll_locales: accept a codeset in lang= (e.g. lang=en_AU.UTF-8),
     which was mistaken for the country and gave the wrong locale and
     keyboard.
+  * fll_locales: generate the locale lang= asks for when the image does
+    not have it, instead of falling back to en_US.
+  * fll_locales: without lang=, keep the image's own locale instead of
+    trying en_US.
 
  -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Thu, 08 Oct 2026 03:12:25 +0200
 
