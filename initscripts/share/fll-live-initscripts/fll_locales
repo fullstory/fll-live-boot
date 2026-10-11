@@ -187,8 +187,10 @@ fi
 
 # Split lang= value into language code (ll) and country code (CC).
 # Accepts both dash and underscore as separator: de-AT, de_AT, or bare de.
+# A codeset (de_AT.UTF-8) is dropped.
 # A bare language code (e.g. lang=de) uses the language code as country code
 # too, which causes locale_resolve_lang to search by language only.
+LANG_CMDLINE="${LANG_CMDLINE%%.*}"
 LANG_CODE="${LANG_CMDLINE%%[-_]*}"
 COUNTRY_CODE=$(printf '%s' "${LANG_CMDLINE##*[-_]}" | tr '[:lower:]' '[:upper:]')
 

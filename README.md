@@ -128,7 +128,7 @@ Read in the booted system by `fll_locales` and `fll_desktop`.
 
 | Parameter | Description |
 |-----------|-------------|
-| `fll.lang=ll_CC` | Language and country for the locale and the keyboard layout. Dash or underscore separator, or a bare language code. |
+| `fll.lang=ll_CC` | Language and country for the locale and the keyboard layout. Dash or underscore separator, or a bare language code; a codeset (`ll_CC.UTF-8`) is ignored. |
 | `fll.keytable=LAYOUT` | Keyboard layout override. |
 | `fll.xkbmodel=MODEL`, `fll.xkbvariant=VARIANT`, `fll.xkboptions=OPTS` | XKB overrides written to `/etc/default/keyboard`. |
 | `fll.desktop=SESSION` | Session to start, matched against `/usr/share/*sessions/*.desktop`. |
