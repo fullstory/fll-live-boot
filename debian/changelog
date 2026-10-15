@@ -1,9 +1,5 @@
-fll-live-boot (20261006.3) UNRELEASED; urgency=medium
+fll-live-boot (20261006.3) unstable; urgency=medium
 
-  [ Stefan Lippers-Hollmann ]
-  * NOT RELEASED YET
-
-  [ Kel Modderman ]
   * fll_locales: accept a codeset in lang= (e.g. lang=en_AU.UTF-8),
     which was mistaken for the country and gave the wrong locale and
     keyboard.
