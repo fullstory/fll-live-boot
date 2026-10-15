@@ -1,3 +1,9 @@
+fll-live-boot (20261006.4) UNRELEASED; urgency=medium
+
+  * NOT RELEASED YET
+
+ -- Stefan Lippers-Hollmann <s.l-h@gmx.de>  Fri, 16 Oct 2026 00:14:20 +0200
+
 fll-live-boot (20261006.3) unstable; urgency=medium
 
   * fll_locales: accept a codeset in lang= (e.g. lang=en_AU.UTF-8),
